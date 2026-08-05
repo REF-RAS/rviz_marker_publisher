@@ -1,0 +1,134 @@
+FROM moveit/moveit2:jazzy-release
+LABEL author "Andrew Lui <luia2@qut.edu.au>"
+
+# ros configuration
+ARG ROS_DISTRO=jazzy
+
+SHELL ["/bin/bash", "-c"]
+
+# install tools
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+sudo \
+terminator \
+vim \
+git \
+net-tools \
+locales \
+wget \
+curl \
+dbus \
+htop \
+build-essential \
+cmake \
+gdb
+
+# install python packages
+RUN apt-get update && apt-get install -y software-properties-common
+RUN add-apt-repository ppa:deadsnakes/ppa
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+# python3.12 \
+python3-pip \
+python3-venv \
+ros-dev-tools
+# link python3.12 to python
+# RUN rm /usr/bin/python3
+# RUN ln -s /usr/bin/python3.12 /usr/bin/python3
+# RUN ln -s /usr/bin/python3 /usr/bin/python
+
+# install tf_transformation (the dependent transforms3d has to be installed by pip)
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
+ros-${ROS_DISTRO}-tf-transformations
+
+# alternatively add flag --break-system-packages
+RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade python3-pip
+
+# clean the apt cache
+RUN apt-get clean
+RUN rm -rf /var/lib/apt/lists/*
+
+# set locales
+RUN locale-gen en_US.UTF-8  
+RUN update-locale LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8
+ENV LANG en_US.UTF-8  
+ENV LANGUAGE en_US:en  
+ENV LC_ALL en_US.UTF-8
+
+# install other python tools using pip
+# avoid the error DeprecationWarning: pkg_resources
+# RUN pip install setuptools==66.1
+
+# input argument from the build command
+ARG HOST_UID
+ARG HOST_GID
+ARG USER=ubuntu
+# set home folder
+ARG HOME=/workspace
+
+# add the user and group using the input UID and GID: enable files and folders generated are consistent with that in the host computer
+RUN echo "${USER} ${HOST_UID} ${HOST_GID} "
+RUN if [ -n "$HOST_GID" ] && [ -n "$HOST_UID" ]; then \
+        if [ "$USER" = "ubuntu" ]; then \
+            groupmod -g ${HOST_GID} ubuntu; \
+            usermod -g ubuntu ubuntu; \
+        else \
+            # groupadd -g ${HOST_GID} ${USER};  \
+            # useradd -u ${HOST_UID} -g ${USER} -d ${HOME} -m ${USER}; \
+            groupmod -g ${HOST_GID} -n ${USER} ubuntu; \
+            usermod -u ${HOST_UID} -l ${USER} -d ${HOME} -m ubuntu; \
+        fi \
+    else \
+        groupmod -n ${USER} ubuntu; \
+        usermod -l ${USER} -d ${HOME} -m ubuntu; \
+    fi
+
+# add the USER to the sudoers 
+RUN echo "${USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+
+# create misc folders
+RUN mkdir -p ${HOME}/.cache ${HOME}/.local
+# change the home folder owner to user
+RUN chown -R ${USER}:${USER} ${HOME}
+WORKDIR ${HOME}
+
+# install the python modules specified
+# remove permanantly the lock for systen managed package bypass PEP 668 restriction
+RUN rm /usr/lib/python*/EXTERNALLY-MANAGED  
+# install python modules using uv: pull the official pre-compiled uv binary
+COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# set environment variable for uv inside docker
+ENV UV_SYSTEM_PYTHON=1
+ENV UV_COMPILE_BYTECODE=1
+
+COPY assets/requirements.txt /tmp/requirements.txt
+COPY assets/requirements_dev.txt /tmp/requirements_dev.txt
+RUN uv pip install -r /tmp/requirements.txt
+RUN uv pip install -r /tmp/requirements_dev.txt
+RUN rm /tmp/requirements*.txt
+RUN uv cache clean
+
+# install python modules using pip
+# COPY assets/requirements.txt /tmp/requirements.txt
+# RUN pip install -r /tmp/requirements.txt --no-warn-script-location --no-cache-dir 
+# RUN rm /tmp/requirements.txt
+
+# change to user for the rest of the operations
+USER ${USER}
+
+# create ros2 workspace
+ENV ROS2_WS=${HOME}/ros2_ws
+RUN mkdir -p ${ROS2_WS}/src
+# update rosdep
+RUN rosdep update && rosdep install -y -r -i --rosdistro ${ROS_DISTRO} --from-paths .
+
+# auto load the virtual environment and the ROS2 environment with each shell 
+# RUN echo "source /home/${USER}/.venv/base/bin/activate" >> ~/.bashrc
+RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc
+# RUN echo "source ${ROS2_WS}/install/setup.bash" >> ~/.bashrc
+
+# copy and define entry script
+COPY ./assets/entrypoint_setup.sh /usr/local/bin/ros_entrypoint
+RUN sudo chmod +x /usr/local/bin/ros_entrypoint
+ENTRYPOINT ["/usr/local/bin/ros_entrypoint"]
+
+CMD ["bash"]
+

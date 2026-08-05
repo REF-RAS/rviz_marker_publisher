@@ -1,0 +1,48 @@
+# Copyright 2026 - Andrew Kwok Fai LUI, Robotics and Autonomous System Group,
+# Research Engineering Facility, RI
+# the Queensland University of Technology
+
+services:
+    # service: ff3dr: the base service for running containerized applications of aptium ff3dr on cuda/gpu
+    moveit2:
+        build:
+            context: .
+            dockerfile: Dockerfile.moveit2_uv
+            args: 
+                USER: ubuntu
+                HOST_UID:
+                HOST_GID:
+                # HOME:                     # default is /workspace
+        # user: qcr:qcr    
+        image: ghcr.io/ref-ras/moveit2
+        container_name: moveit2
+        # working_dir: 
+        stdin_open: true
+        tty: true
+        privileged: true
+        network_mode: host
+        ipc: host
+        # ports:
+        # - '8100:8100' # map host port 8000 to container port 8000
+        environment:
+            - DISPLAY
+            - QT_X11_NO_MITSHM=1
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix:rw
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro 
+            - ~/ros2_ws/src/rviz_marker_tools_ros2:/workspace/ros2_ws/src/rviz_marker_tools_ros2:rw  
+            # - ~/ros2_ws/src/pymoveit2:/app/ros2_ws/src/pymoveit2:rw                    
+        command: bash
+        # deploy:
+        #     resources:
+        #         reservations:
+        #             devices:
+        #                 - driver: nvidia
+        #                   count: 1
+        #                   capabilities: [gpu]
+
+
+
+       
+           
