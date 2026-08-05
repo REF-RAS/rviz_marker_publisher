@@ -127,7 +127,9 @@ def pose_stamped_to_transform_stamped(pose_stamped:PoseStamped, reference_frame:
     transform_stamped = TransformStamped()
     transform_stamped.header = pose_stamped.header
     # TransformStamped.header.stamp expects the serializable message type builtin_interfaces.msg.Time, use to_msg() to convert 
-    transform_stamped.header.stamp = pose_stamped.header.stamp.to_msg() 
+    # NOTE: TransformStamped.header.stamp and PoseStamped.header.stamp are the same type, so the above comment should be wrong
+    # transform_stamped.header.stamp = pose_stamped.header.stamp.to_msg() 
+    transform_stamped.header.stamp = pose_stamped.header.stamp
     transform_stamped.child_frame_id = reference_frame
     
     transform_stamped.transform.translation.x = pose_stamped.pose.position.x

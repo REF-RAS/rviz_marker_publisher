@@ -17,14 +17,15 @@ from rviz_marker.rviz_tools import *
 
 def main():
     rclpy.init()
-    the_node = Node(node_name='collision_objects') 
+    the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizVisualizer(the_node)
+    rv.spin(spin_in_thread=True)
     # add a sphere marker as a persistent marker to the RVizVisualizer
-    sphere_marker = create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', dimensions=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker = create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.add_persistent_marker(sphere_marker) 
     input('Press Enter to terminate')
-    rclcp.shutdown()
+    rclpy.shutdown()
 
 if __name__ == '__main__':
     main()

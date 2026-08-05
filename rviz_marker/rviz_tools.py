@@ -15,7 +15,7 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import yaml, os, time, numbers, threading, random, struct
+import yaml, os, time, numbers, threading, random, traceback
 from enum import Enum
 from collections import defaultdict
 import cv2
@@ -24,6 +24,7 @@ import rclpy, tf2_ros
 from rclpy.node import Node
 from rclpy.task import Future
 from rclpy.time import Time
+from rclpy.duration import Duration
 from rclpy import logging
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import  QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
@@ -35,9 +36,9 @@ from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
 
-from .pose_tools import list_to_pose, pose_to_xyzq
-from .package_tools import PackageFile
-from .logging_tools import logger
+from rviz_marker.pose_tools import list_to_pose, pose_to_xyzq
+from rviz_marker.package_tools import PackageFile
+from rviz_marker.logging_tools import logger
 import rviz_marker.pose_tools as pose_tools
 
 class RGBAColors(int, Enum):
@@ -56,16 +57,20 @@ class RGBAColors(int, Enum):
     def validate_rgba(rgba):
         rgba = RGBAColors.RED.rgba if rgba is None else rgba
         if type(rgba) in (list, tuple) and len(rgba) == 3:
-            rgba.append(1)
+            rgba.append(1.0)
         return rgba
     
-def _create_marker(name:str, id:int, reference_frame:str=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=None, lifetime=None, 
+                        pose=None, scale:list=None, color:list=None) -> Marker:
     """ Create a Marker object
     :meta private:
     :param name: the name space of the marker
     :param id: the id of the marker
     :param reference_frame: the reference frame, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param pose: the pose of type geometry_msgs.msg.Pose or a list of xyzrpy that is acceptable by list_to_pose of pose_tools
+    :param scale: a floating point number of a 3-tuple of floating point indicating the scale
+    :param color: a 4-tuple of rgba or 3-tuple of rgb  
     :return: Marker
     """
     the_marker = Marker()
@@ -75,11 +80,33 @@ def _create_marker(name:str, id:int, reference_frame:str=None, lifetime=rclpy.du
     if name is not None:
         the_marker.ns = f'{name}'
         the_marker.id = id
-    lifetime = rclpy.duration.Duration(seconds=0, nanoseconds=0) if lifetime is None else lifetime
+    lifetime = Duration(seconds=0, nanoseconds=0) if lifetime is None else lifetime
     if type(lifetime) in (float, int):
         lifetime_ns = (lifetime - int(lifetime)) * 1000000000
-        lifetime = rclpy.duration.Duration(seconds=lifetime, nanoseconds=lifetime_ns)
-    the_marker.lifetime = lifetime
+        lifetime = Duration(seconds=lifetime, nanoseconds=lifetime_ns)
+    the_marker.lifetime = lifetime.to_msg()
+    # the type
+    if isinstance(marker_type, int):
+        the_marker.type = marker_type
+    # the pose
+    if isinstance(pose, Pose):
+        the_marker.pose = pose
+    elif isinstance(pose, (list, tuple)):
+        the_marker.pose = list_to_pose(pose)
+    # the scale
+    if isinstance(scale, numbers.Number):
+        scale = [scale, scale, scale]    
+    if isinstance(scale, (list, tuple)):
+        logger.warning(f'_create_marker scale is a list or tuple: {scale} {type(scale[0])} {type(scale[1])} {type(scale[2])} ')
+        traceback.print_stack()
+        the_marker.scale = Vector3(x=float(scale[0]), y=float(scale[1]), z=float(scale[2]))
+        logger.warning('after')
+    else:
+        logger.warning('_create_marker scale is not a list of tuple')
+        the_marker.scale = Vector3(x=1.0, y=1.0, z=1.0)
+    # the color
+    color = RGBAColors.validate_rgba(color)
+    the_marker.color = ColorRGBA(r=color[0], g=color[1], b=color[2], a=color[3])       
     return the_marker    
     
 def create_delete_marker(name:str, id:int, reference_frame:str):
@@ -100,42 +127,13 @@ def create_delete_all_marker(reference_frame:str):
     :param reference_frame: the reference frame, defaults to None
     :return: the Marker object for deleting all markers
     """
-    the_marker = Marker()
-    the_marker.header.frame_id = reference_frame
-    the_marker.header.stamp = Time().to_msg() 
+    the_marker = _create_marker(None, None, reference_frame)
     the_marker.action = Marker.DELETEALL
     return the_marker   
 
-def create_primitive_marker(object_name:str, primitive_type:int, dimensions:list, xyz:list, rpy:list, reference_frame:str, 
-                            rgba=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> None:
-    """
-    Add a primitive marker
-
-    :param object_name: The name given to the new scene object
-    :type object_name: str
-    :param primitive_type: The primitive type (SolidPrimitive.BOX, SolidPrimitive.SPHERE, SSolidPrimitive.CYLINDER, SolidPrimitive.CONE)
-    :type primitive_type: int
-    :param dimensions: The dimensions of the box as a list of 3 floats
-    :type radius: list
-    :param xyz: The position of the box in the world/default reference frame
-    :type xyz: list
-    :param rpy: The orientation of the box in the world/default reference frame
-    :type rpy: list
-    :param reference_frame: The frame of reference of the xyz and rpy
-    :type reference_frame: str, default to WORLD_REFERENCE_LINK
-    :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
-    """ 
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-
-    pose_stamped = pose_tools.list_to_pose_stamped(xyz + rpy, reference_frame, Time().to_msg())
-    
-    collision_object = CollisionObject(header=pose_stamped.header, id=object_name, operation=CollisionObject.ADD, pose=pose_stamped.pose)
-    collision_object.primitives.append(SolidPrimitive(type=primitive_type, dimensions=dimensions))
-
 
 def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, reference_frame:str, axes:str='xy', plane_thickness=0.005, 
-                             rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+                             rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a 2D region as a plane
 
     :param name: the name space of the marker
@@ -149,8 +147,6 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, referen
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().CUBE
     rpy = [0, 0, 0]
     scale1 = abs(bbox2d[2] - bbox2d[0])
     scale2 = abs(bbox2d[3] - bbox2d[1])
@@ -158,21 +154,21 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, referen
     scale2 = 0.01 if scale2 == 0 else scale2
     if axes == 'xy':
         xyz = [(bbox2d[0] + bbox2d[2]) / 2, (bbox2d[1] + bbox2d[3]) / 2, offset]
-        the_marker.pose = list_to_pose(xyz + rpy)
-        the_marker.scale = Vector3(scale1, scale2, plane_thickness)
+        pose = list_to_pose(xyz + rpy)
+        scale = Vector3(x=float(scale1), y=float(scale2), z=float(plane_thickness))
     elif axes == 'yz':
         xyz = [offset, (bbox2d[0] + bbox2d[2]) / 2, (bbox2d[1] + bbox2d[3]) / 2]
-        the_marker.pose = list_to_pose(xyz + rpy)
-        the_marker.scale = Vector3(plane_thickness, scale1, scale2)
+        pose = list_to_pose(xyz + rpy)
+        scale = Vector3(x=float(plane_thickness), y=float(scale1), z=float(scale2))
     elif axes == 'xz':
         xyz = [(bbox2d[0] + bbox2d[2]) / 2, offset, (bbox2d[1] + bbox2d[3]) / 2]
-        the_marker.pose = list_to_pose(xyz + rpy)
-        the_marker.scale = Vector3(scale1, plane_thickness, scale2)
+        pose = list_to_pose(xyz + rpy)
+        scale = Vector3(x=float(scale1), y=float(plane_thickness), z=float(scale2))
     else:
         logger.warning(f'create_2dregion_marker: invalid plane parameter {axes}')
         return None
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame, lifetime,
+                                pose=pose, scale=scale, color=rgba)
     return the_marker
 
 def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, reference_frame:str, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
@@ -186,17 +182,15 @@ def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, reference_frame:
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().CUBE
     rpy = [0, 0, 0]
     xyz = [(bbox3d[0] + bbox3d[3]) / 2, (bbox3d[1] + bbox3d[4]) / 2, (bbox3d[2] + bbox3d[5]) / 2]
-    the_marker.pose = list_to_pose(xyz + rpy)
-    the_marker.scale = Vector3(bbox3d[3] - bbox3d[0], bbox3d[4] - bbox3d[1], bbox3d[5] - bbox3d[2])
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+    pose = list_to_pose(xyz + rpy)
+    scale = Vector3(x=float(bbox3d[3] - bbox3d[0]), y=float(bbox3d[4] - bbox3d[1]), z=float(bbox3d[5] - bbox3d[2]))
+    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame, lifetime,
+                                pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, reference_frame:str, dimensions:list=0.5, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a 3D region as a box
 
     :param name: the name space of the marker
@@ -207,39 +201,29 @@ def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, reference_fram
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().CUBE
-    the_marker.pose = list_to_pose(xyzrpy)
-    if isinstance(dimensions, numbers.Number):
-        dimensions = [dimensions, dimensions, dimensions]
-    the_marker.scale = Vector3(*dimensions)
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+    pose = list_to_pose(xyzrpy)
+    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame, lifetime, pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_arrow_marker(name:str, id:int, xyzrpy:list, reference_frame:str, dimensions:list=0.5, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_arrow_marker(name:str, id:int, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying an arrow
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyzrpy: the pose of the arrow as a list of 6
     :param reference_frame: the reference frame, defaults to None
-    :param dimensions: the thickness of the arrow, defaults to 0.5
+    :param scale: the thickness of the arrow, defaults to 0.5
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().ARROW
-    the_marker.pose = list_to_pose(xyzrpy)
-    if isinstance(dimensions, numbers.Number):
-        dimensions = [dimensions, dimensions/10, dimensions/25]
-    the_marker.scale = Vector3(*dimensions)
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+    pose = list_to_pose(xyzrpy)
+    if isinstance(scale, numbers.Number):
+        scale = [scale, scale/10, scale/25]
+    the_marker = _create_marker(name, id, Marker.ARROW, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)    
     return the_marker
 
-def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a line
 
     :param name: the name space of the marker
@@ -252,16 +236,13 @@ def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, reference_frame:s
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().LINE_STRIP
-    the_marker.pose = list_to_pose([0, 0, 0, 0, 0, 0])
-    the_marker.points[:] = [Point(*xyz1), Point(*xyz2)]
-    the_marker.scale.x = line_width
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+    pose = list_to_pose([0, 0, 0, 0, 0, 0])
+    scale = [float(line_width), 1.0, 1.0]
+    the_marker = _create_marker(name, id, Marker.LINE_STRIP, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)  
+    the_marker.points[:] = [Point(x=xyz1[0], y=xyz1[1], z=xyz1[2]), Point(x=xyz2[0], y=xyz2[1], z=xyz2[2])]
     return the_marker    
 
-def create_path_marker(name:str, id:int, xyzlist:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_path_marker(name:str, id:int, xyzlist:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a path of multiple waypoints
 
     :param name: the name space of the marker
@@ -273,79 +254,71 @@ def create_path_marker(name:str, id:int, xyzlist:list, reference_frame:str, line
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().LINE_LIST
-    xyzrpy = [0, 0, 0, 0, 0, 0]
-    the_marker.pose = list_to_pose(xyzrpy)
+
+    pose = list_to_pose([0, 0, 0, 0, 0, 0])
+    scale = [float(line_width), 1.0, 1.0]
     rgba = RGBAColors.RED.rgba if rgba is None else rgba
+    the_marker = _create_marker(name, id, Marker.LINE_LIST, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)      
+    # process the points
     the_marker.points[:] = []
     the_marker.colors[:] = []
     prev_xyz = None
     for i, xyz in enumerate(xyzlist):
-        if type(xyz) == PoseStamped:
-            xyz = Point(xyz.pose.position.x, xyz.pose.position.y, xyz.pose.position.z)
-        elif type(xyz) == Pose:
-            xyz = Point(xyz.position.x, xyz.position.y, xyz.position.z)
-        elif type(xyz) in (tuple, list):
-            xyz = Point(*xyz)
+        if isinstance(xyz, PoseStamped):
+            xyz = Point(x=xyz.pose.position.x, y=xyz.pose.position.y, z=xyz.pose.position.z)
+        elif isinstance(xyz, Pose):
+            xyz = Point(x=xyz.position.x, y=xyz.position.y, z=xyz.position.z)
+        elif isinstance(xyz, (tuple, list)):
+            xyz = Point(x=xyz[0], y=xyz[1], z=xyz[2])
         if i == 0: 
             prev_xyz = xyz
             continue
         the_marker.points.append(prev_xyz)
         the_marker.points.append(xyz)
-        the_marker.colors.append(ColorRGBA(*rgba))
-        the_marker.colors.append(ColorRGBA(*rgba))
+        the_marker.colors.append(ColorRGBA(r=rgba[0], g=rgba[1], b=rgba[2], a=rgba[3]))
+        the_marker.colors.append(ColorRGBA(r=rgba[0], g=rgba[1], b=rgba[2], a=rgba[3]))
         prev_xyz = xyz
-    the_marker.scale.x = line_width
+
     return the_marker
 
-def create_sphere_marker(name:str, id:int, xyz:list, reference_frame:str, dimensions=0.2, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_sphere_marker(name:str, id:int, xyz:list, reference_frame:str, scale=0.2, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a sphere
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyz: the position of the sphere
     :param reference_frame: the reference frame, defaults to None
-    :param dimensions: the dimensions of the sphere as a list of 3 dimensions or a number, defaults to 0.2
+    :param scale: the scale of the sphere as a list of 3 scales or a number, defaults to 0.2
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().SPHERE 
     rpy = [0, 0, 0]
-    the_marker.pose = list_to_pose(xyz + rpy) 
-    if isinstance(dimensions, numbers.Number):
-        dimensions = [dimensions, dimensions, dimensions]
-    the_marker.scale = Vector3(*dimensions)
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)      
+    pose = list_to_pose(xyz + rpy) 
+    the_marker = _create_marker(name, id, Marker.SPHERE, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)      
     return the_marker
 
-def create_cylinder_marker(name:str, id:int, xyzrpy:list, reference_frame:str, dimensions=[0.1, 0.1, 0.2], rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, reference_frame:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a cylinder
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyzrpy: the pose of the cylinder
     :param reference_frame: the reference frame, defaults to None
-    :param dimensions: the dimensions of the cylinder as a list of 3 numbers representing radius in x and y direction and the height
+    :param scale: the scale of the cylinder as a list of 3 numbers representing radius in x and y direction and the height
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().CYLINDER 
-    the_marker.pose = list_to_pose(xyzrpy) 
-    if type(dimensions) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in dimensions]):
-        logger.warning(f'create_cylinder_marker: dimensions should be a list of 3 numbers (radius, radius, height)')
+    pose = list_to_pose(xyzrpy) 
+    if type(scale) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in scale]):
+        logger.warning(f'create_cylinder_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
-    the_marker.scale = Vector3(*dimensions)
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)      
+    the_marker = _create_marker(name, id, Marker.CYLINDER, reference_frame, lifetime,
+                                pose=pose, scale=scale, color=rgba)  
     return the_marker 
 
-def create_text_marker(name:str, id:int, text:str, xyzrpy:list, reference_frame:str, dimensions:list=0.5, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a text
 
     :param name: the name space of the marker
@@ -353,23 +326,17 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, reference_frame:
     :param text: a string to be displayed
     :param xyzrpy: the pose of the text as a list of 6
     :param reference_frame: the reference frame, defaults to None
-    :param dimensions: the size of the text, defaults to 0.5
+    :param scale: the size of the text, defaults to 0.5
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().TEXT_VIEW_FACING 
-    the_marker.pose = list_to_pose(xyzrpy)
-    if isinstance(dimensions, numbers.Number):
-        dimensions = [dimensions, dimensions, dimensions]
-    the_marker.scale = Vector3(*dimensions)
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+    pose = list_to_pose(xyzrpy)
+    the_marker = _create_marker(name, id, Marker.TEXT_VIEW_FACING, reference_frame, lifetime, pose=pose, scale=scale, color=rgba) 
     the_marker.text = text
     return the_marker
 
-def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_frame:str, dimensions:list=0.5, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
     """ Creates a marker for displaying a mesh object
 
     :param name: the name space of the marker
@@ -377,20 +344,17 @@ def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_fr
     :param file_uri: the full path to the file containing a binary STL or DAE file or using protocols such as file://, package://, or http://
     :param xyzrpy: the pose of the text as a list of 6
     :param reference_frame: the reference frame, defaults to None
-    :param dimensions: the scale factor of the mesh object, defaults to [1, 1, 1]
+    :param scale: the scale factor of the mesh object, defaults to [1, 1, 1]
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
     :return: the Marker object
     """
-    the_marker = _create_marker(name, id, reference_frame, lifetime)
-    the_marker.type = Marker().MESH_RESOURCE 
-    the_marker.pose = list_to_pose(xyzrpy)
-    if type(dimensions) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in dimensions]):
-        logger.warning(f'create_mesh_marker: dimensions should be a list of 3 numbers (radius, radius, height)')
+    pose = list_to_pose(xyzrpy)
+    if type(scale) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in scale]):
+        logger.warning(f'create_mesh_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
-    the_marker.scale = Vector3(*dimensions)
-    rgba = RGBAColors.validate_rgba(rgba)
-    the_marker.color = ColorRGBA(*rgba)
+
+    the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, reference_frame, lifetime, pose=pose, scale=scale, color=rgba) 
     try:
         file_uri = PackageFile.resolve_to_file_or_http_uri(file_uri)
     except Exception as ex:
@@ -452,12 +416,12 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
         cloud_data['z'] = np.reshape(depth_array * pixel_physical_size[2], num_pixels)
     # combine the pixel values into a numpy array of shape (num_pixels, 4) for both greyscale and rgb images
     if is_grey:
-        fields = [PointField('x', 0, PointField.FLOAT32, 1), PointField('y', 4, PointField.FLOAT32, 1),
-          PointField('z', 8, PointField.FLOAT32, 1), PointField('intensity', 12, PointField.UINT8, 1),]
+        fields = [PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1), PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+          PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1), PointField(name='intensity', offset=12, datatype=PointField.UINT8, count=1),]
         cloud_data['value'] = np.reshape(image_bgr, num_pixels)
     else:
-        fields = [PointField('x', 0, PointField.FLOAT32, 1), PointField('y', 4, PointField.FLOAT32, 1),
-          PointField('z', 8, PointField.FLOAT32, 1), PointField('rgba', 12, PointField.UINT32, 1),]
+        fields = [PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1), PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
+          PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1), PointField(name='rgba', offset=12, datatype=PointField.UINT32, count=1),]
         r = np.asarray(np.reshape(image_bgr[:, :, 2], num_pixels), dtype=np.uint32)
         g = np.asarray(np.reshape(image_bgr[:, :, 1], num_pixels), dtype=np.uint32)
         b = np.asarray(np.reshape(image_bgr[:, :, 0], num_pixels), dtype=np.uint32)   
@@ -520,12 +484,27 @@ class RvizVisualizer():
         self.cloud_pub = self._node.create_publisher(PointCloud2, topic_cloud, qos_profile=self._qos_profile)        
 
         # setup timer
-        # self.timer_marker_viz = rospy.Timer(rospy.Duration(self.default_pub_period_marker), self._cb_timer_marker_viz)
-        # self.timer_cloud_viz = rospy.Timer(rospy.Duration(self.default_pub_period_cloud), self._cb_timer_cloud_viz)
-        # self.timer_tf = rospy.Timer(rospy.Duration(self.default_pub_period_tf), self._cb_timer_tf)
         self.timer_marker_viz = self._node.create_timer(self.default_pub_period_marker, self._cb_timer_marker_viz, callback_group=self.callback_group)
         self.timer_cloud_viz = self._node.create_timer(self.default_pub_period_cloud, self._cb_timer_cloud_viz, callback_group=self.callback_group)
         self.timer_tf = self._node.create_timer(self.default_pub_period_tf, self._cb_timer_tf, callback_group=self.callback_group)
+
+    # call to spin this node 
+    def spin(self, spin_in_thread:bool=True) -> None:
+        """Starts the arm commander.
+
+        If the parameter is True, the arm_commander is running in a new thread,
+        If otherwise, the commander is running in the caller's thread, blocking the call.
+
+        :param spin_in_thread: create a new thread for the loop, defaults to True
+        :type spin_in_thread: bool, optional
+        """
+        if spin_in_thread:
+            executor = rclpy.executors.MultiThreadedExecutor(2)
+            executor.add_node(self._node)            
+            executor_thread = threading.Thread(target=executor.spin, daemon=True, args=())
+            executor_thread.start()
+        else:
+            rclpy.spin(self._node)
 
     def _cb_timer_marker_viz(self):
         """ internal callback function 
@@ -538,6 +517,7 @@ class RvizVisualizer():
                 marker_dict = self.markers_dict.get(key)
                 marker = marker_dict['marker'] 
                 if marker_dict['next_time'] is None or current_time >= marker_dict['next_time']:
+                    # logger.warning(f'_cb_timer_marker_viz: {marker}')
                     self.marker_pub.publish(marker)
                     marker_dict['next_time'] = current_time + marker_dict['pub_period']
             # publish the persistent marker arrays 
@@ -550,6 +530,7 @@ class RvizVisualizer():
             for marker_dict in list(self.temp_marker_list):
                 marker = marker_dict['marker']
                 if current_time > marker_dict['pub_time']:
+                    logger.warning(f'_cb_timer_marker_viz: {marker}')
                     self.marker_pub.publish(marker)
                     self.temp_marker_list.remove(marker_dict)
 
@@ -562,7 +543,7 @@ class RvizVisualizer():
                 pointcloud = pointcloud_dict['pointcloud']
                 current_time = time.time()
                 if pointcloud_dict['next_time'] is None or current_time >= pointcloud_dict['next_time']:
-                    pointcloud.header.stamp = rospy.Time.now()
+                    pointcloud.header.stamp = self._node.get_clock().now().to_msg()
                     self.cloud_pub.publish(pointcloud)
                     pointcloud_dict['next_time']  = current_time + pointcloud_dict['pub_period']
 
@@ -574,7 +555,8 @@ class RvizVisualizer():
             for custom_tf in self.tfs_dict.values():
                 name, parent_frame, pose = custom_tf['frame'], custom_tf['parent_frame'], custom_tf['pose']
                 # xyzq = pose_to_xyzq(pose)
-                # self.tf_pub.sendTransform(xyzq[:3], xyzq[3:], rospy.Time.now(), name, parent_frame)      
+                # self.tf_pub.sendTransform(xyzq[:3], xyzq[3:], Time().to_msg(), name, parent_frame)  
+                # pose if of type Pose    
                 self._pub_transform(name, pose, parent_frame)  
 
     # internal function: publish the transform of a specific named object
@@ -594,13 +576,13 @@ class RvizVisualizer():
         elif type(pose) == Pose:
             pose_stamped = PoseStamped()
             pose_stamped.header.frame_id = frame
-            pose_stamped.header.stamp = rospy.Time.now()
+            pose_stamped.header.stamp = self._node.get_clock().now().to_msg()
             pose_stamped.pose = pose
         elif type(pose) == PoseStamped:
             frame = pose.header.frame_id
             pose_stamped = pose
         else:
-            rospy.logerr(f'{__class__.__name__}: parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
+            logger.logerr(f'{__class__.__name__}: parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
             raise TypeError(f'A parameter is invalid')
         self.tf_broadcaster.sendTransform(pose_tools.pose_stamped_to_transform_stamped(pose_stamped, name))
 
@@ -755,62 +737,6 @@ class RvizVisualizer():
                 return pointcloud
             return None
 
-# --------------------------------------------
-# -- Animation classes
-class PoseAnimator():
-    def __init__(self, pose):
-        self.pose:Pose = pose
 
-# -- the test program
-if __name__ == '__main__':
-    rospy.loginfo(f'running test_rv_node')
-    rospy.init_node('test_rv_node', anonymous=False)    
-    # test the mark visualization
-    rv = RvizVisualizer()
-    the_pose:Pose = Pose()
-    the_pose.position = Point(0, 0, 0)
-    the_pose.orientation = Quaternion(0, 0, 0, 1)
-    # create world frame
-    rv.add_custom_tf('world', 'map', the_pose)
 
-    text_marker_1 = rv.add_persistent_marker(create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0.2, 0, 0], reference_frame='world', dimensions=0.3), pub_tf=True)
-    text_marker_2 = rv.add_persistent_marker(create_text_marker(name='text', id=2, text='World', xyzrpy=[0, 1, 0, 0.2, 0, 0], reference_frame='world', dimensions=0.3), pub_tf=True)
-    rv.add_persistent_marker(create_line_marker('line', 1, [1, 0, 0], [0, 0, 1], 'world', 0.01, rgba=[0.0, 1.0, 1.0, 1.0]), pub_period=0.1)
-    rv.add_persistent_marker(create_sphere_marker('sphere', 1, [1, 1, 1], 'world', 0.05, rgba=[0.5, 1.0, 1.0, 1.0]))    
-    rv.pub_temporary_marker(create_arrow_marker('arrow', 1, [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], 'world', lifetime=rospy.Duration(3.0)))
-    # delete the line marker
-    rospy.sleep(rospy.Duration(2.0))
-    rv.delete_persistent_marker('line', 1)
-    # delete all markers
-    rospy.sleep(rospy.Duration(2.0))
-    rv.delete_all_persistent_markers()
-    # display stl mesh file
-    teapot_mesh = os.path.join(os.path.dirname(__file__), '../docs/assets/UtahTeapot.stl')
-    teapot_mesh = 'file://' + teapot_mesh
-    rv.add_persistent_marker(create_mesh_marker('teapot', 1, teapot_mesh, [-1.0, -1.0, 0.0, 0, 0, 0], 'world', [0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0]))  
-    # display image as pointcloud
-    image_bgr = cv2.imread(os.path.join(os.path.dirname(__file__), '../docs/assets/CoralFish.png'))
-    pc2_message = create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], reference_frame='world')
-    rv.add_pointcloud('the_image', pc2_message)
-    # add the text marker
-    rospy.sleep(rospy.Duration(2.0))
-    text_marker_1 = rv.add_persistent_marker(create_text_marker('text', 1, 'Hello', [0, 0, 0, 0.2, 0, 0], 'world', 0.3), pub_period=0.1, pub_tf=True)
-    for i in range(100):
-        pose = text_marker_1.pose
-        pose.position.x += random.uniform(-0.5, 0.5)
-        rospy.sleep(rospy.Duration(0.2))
-    # delete the text marker again
-    rv.delete_persistent_marker('text', 1)
-    # create marker array
-    marker_array = MarkerArray()
-    for x in range(4):
-        for y in range(4):
-            xyzrpy=[x * 0.4, y * 0.4, 1.0, 0, 0, 0]
-            tile = create_cube_marker_from_xyzrpy('tile', x + y * 4, xyzrpy, reference_frame='world', 
-                                    dimensions=[0.3, 0.3, 0.05], rgba=[0.0, 0.2, 1.0, 0.5])
-            marker_array.markers.append(tile)    
-    rv.add_persistent_marker_array(marker_array)
-    rospy.sleep(rospy.Duration(5.0))
-    rv.delete_all_persistent_marker_arrays()
-    logger.info(f'The demo is completed')
-    rospy.spin()
+
