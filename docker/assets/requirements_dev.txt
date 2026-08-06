@@ -1,4 +1,0 @@
-# develop
-pytest
-ruff
-pydocstringformatter

@@ -13,10 +13,13 @@
   <buildtool_depend>python3-pytest</buildtool_depend>
   <buildtool_depend>python3-setuptools</buildtool_depend>
 
-    <!-- ROS 2 runtime dependencies go here -->
+  <!-- ros 2 runtime dependencies go here -->
   <depend>rclpy</depend>
   <depend>visualization_msgs</depend>
   <depend>tf_transformations</depend>
+
+  <!-- ros 2 runtime dependencies go here -->
+  <depend>python3-opencv</depend>
 
   <test_depend>python3-pytest</test_depend>
 

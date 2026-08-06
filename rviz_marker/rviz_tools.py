@@ -100,9 +100,7 @@ def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=N
         logger.warning(f'_create_marker scale is a list or tuple: {scale} {type(scale[0])} {type(scale[1])} {type(scale[2])} ')
         traceback.print_stack()
         the_marker.scale = Vector3(x=float(scale[0]), y=float(scale[1]), z=float(scale[2]))
-        logger.warning('after')
     else:
-        logger.warning('_create_marker scale is not a list of tuple')
         the_marker.scale = Vector3(x=1.0, y=1.0, z=1.0)
     # the color
     color = RGBAColors.validate_rgba(color)
@@ -117,7 +115,7 @@ def create_delete_marker(name:str, id:int, reference_frame:str):
     :param reference_frame: the reference frame, defaults to None
     :return: the Marker object for deleting a marker
     """
-    the_marker = _create_marker(name, id, reference_frame)
+    the_marker = _create_marker(name, id, reference_frame=reference_frame)
     the_marker.action = Marker.DELETE
     return the_marker
     
@@ -127,7 +125,7 @@ def create_delete_all_marker(reference_frame:str):
     :param reference_frame: the reference frame, defaults to None
     :return: the Marker object for deleting all markers
     """
-    the_marker = _create_marker(None, None, reference_frame)
+    the_marker = _create_marker(None, None, reference_frame=reference_frame)
     the_marker.action = Marker.DELETEALL
     return the_marker   
 
@@ -186,7 +184,7 @@ def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, reference_frame:
     xyz = [(bbox3d[0] + bbox3d[3]) / 2, (bbox3d[1] + bbox3d[4]) / 2, (bbox3d[2] + bbox3d[5]) / 2]
     pose = list_to_pose(xyz + rpy)
     scale = Vector3(x=float(bbox3d[3] - bbox3d[0]), y=float(bbox3d[4] - bbox3d[1]), z=float(bbox3d[5] - bbox3d[2]))
-    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame, lifetime,
+    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame=reference_frame, lifetime=lifetime,
                                 pose=pose, scale=scale, color=rgba) 
     return the_marker
 
@@ -220,7 +218,7 @@ def create_arrow_marker(name:str, id:int, xyzrpy:list, reference_frame:str, scal
     pose = list_to_pose(xyzrpy)
     if isinstance(scale, numbers.Number):
         scale = [scale, scale/10, scale/25]
-    the_marker = _create_marker(name, id, Marker.ARROW, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)    
+    the_marker = _create_marker(name, id, Marker.ARROW, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)    
     return the_marker
 
 def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
@@ -238,7 +236,7 @@ def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, reference_frame:s
     """
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
     scale = [float(line_width), 1.0, 1.0]
-    the_marker = _create_marker(name, id, Marker.LINE_STRIP, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)  
+    the_marker = _create_marker(name, id, Marker.LINE_STRIP, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     the_marker.points[:] = [Point(x=xyz1[0], y=xyz1[1], z=xyz1[2]), Point(x=xyz2[0], y=xyz2[1], z=xyz2[2])]
     return the_marker    
 
@@ -258,7 +256,7 @@ def create_path_marker(name:str, id:int, xyzlist:list, reference_frame:str, line
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
     scale = [float(line_width), 1.0, 1.0]
     rgba = RGBAColors.RED.rgba if rgba is None else rgba
-    the_marker = _create_marker(name, id, Marker.LINE_LIST, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)      
+    the_marker = _create_marker(name, id, Marker.LINE_LIST, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
     # process the points
     the_marker.points[:] = []
     the_marker.colors[:] = []
@@ -295,7 +293,7 @@ def create_sphere_marker(name:str, id:int, xyz:list, reference_frame:str, scale=
     """
     rpy = [0, 0, 0]
     pose = list_to_pose(xyz + rpy) 
-    the_marker = _create_marker(name, id, Marker.SPHERE, reference_frame, lifetime, pose=pose, scale=scale, color=rgba)      
+    the_marker = _create_marker(name, id, Marker.SPHERE, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
     return the_marker
 
 def create_cylinder_marker(name:str, id:int, xyzrpy:list, reference_frame:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
@@ -314,8 +312,7 @@ def create_cylinder_marker(name:str, id:int, xyzrpy:list, reference_frame:str, s
     if type(scale) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in scale]):
         logger.warning(f'create_cylinder_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
-    the_marker = _create_marker(name, id, Marker.CYLINDER, reference_frame, lifetime,
-                                pose=pose, scale=scale, color=rgba)  
+    the_marker = _create_marker(name, id, Marker.CYLINDER, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     return the_marker 
 
 def create_text_marker(name:str, id:int, text:str, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
@@ -332,7 +329,7 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, reference_frame:
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
-    the_marker = _create_marker(name, id, Marker.TEXT_VIEW_FACING, reference_frame, lifetime, pose=pose, scale=scale, color=rgba) 
+    the_marker = _create_marker(name, id, Marker.TEXT_VIEW_FACING, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
     the_marker.text = text
     return the_marker
 
@@ -354,7 +351,7 @@ def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_fr
         logger.warning(f'create_mesh_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
 
-    the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, reference_frame, lifetime, pose=pose, scale=scale, color=rgba) 
+    the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
     try:
         file_uri = PackageFile.resolve_to_file_or_http_uri(file_uri)
     except Exception as ex:
@@ -455,7 +452,7 @@ class RvizVisualizer():
         # initialize callback group
         self.callback_group = ReentrantCallbackGroup() if callback_group is None else callback_group
         # create qos profile
-        self._qos_profile = QoSProfile(durability=QoSDurabilityPolicy.VOLATILE, reliability=QoSReliabilityPolicy.RELIABLE, history=QoSHistoryPolicy.KEEP_LAST, depth=1)
+        self._qos_profile = QoSProfile(durability=QoSDurabilityPolicy.VOLATILE, reliability=QoSReliabilityPolicy.RELIABLE, history=QoSHistoryPolicy.KEEP_LAST, depth=5)
 
         # the time delay publishing the temp marker necessary for RViz to subscribe and read
         self.TEMP_MAKRER_PUB_DELAY = config_dict.get('pub_temp_marker_delay', 0.2)
@@ -487,24 +484,6 @@ class RvizVisualizer():
         self.timer_marker_viz = self._node.create_timer(self.default_pub_period_marker, self._cb_timer_marker_viz, callback_group=self.callback_group)
         self.timer_cloud_viz = self._node.create_timer(self.default_pub_period_cloud, self._cb_timer_cloud_viz, callback_group=self.callback_group)
         self.timer_tf = self._node.create_timer(self.default_pub_period_tf, self._cb_timer_tf, callback_group=self.callback_group)
-
-    # call to spin this node 
-    def spin(self, spin_in_thread:bool=True) -> None:
-        """Starts the arm commander.
-
-        If the parameter is True, the arm_commander is running in a new thread,
-        If otherwise, the commander is running in the caller's thread, blocking the call.
-
-        :param spin_in_thread: create a new thread for the loop, defaults to True
-        :type spin_in_thread: bool, optional
-        """
-        if spin_in_thread:
-            executor = rclpy.executors.MultiThreadedExecutor(2)
-            executor.add_node(self._node)            
-            executor_thread = threading.Thread(target=executor.spin, daemon=True, args=())
-            executor_thread.start()
-        else:
-            rclpy.spin(self._node)
 
     def _cb_timer_marker_viz(self):
         """ internal callback function 
@@ -737,6 +716,15 @@ class RvizVisualizer():
                 return pointcloud
             return None
 
+# helper function for testing
+# call to spin this node 
+def spin_in_thread(node:Node) -> None:
+    """ create a threaded executor and spin it in a thread 
 
+    """
+    executor = rclpy.executors.MultiThreadedExecutor(2)
+    executor.add_node(node)            
+    executor_thread = threading.Thread(target=executor.spin, daemon=True, args=())
+    executor_thread.start()
 
 
