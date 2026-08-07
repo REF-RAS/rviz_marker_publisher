@@ -6,9 +6,6 @@ Panels:
       Expanded:
         - /Global Options1
         - /Status1
-        - /Marker1
-        - /MarkerArray1
-        - /PointCloud21
       Splitter Ratio: 0.5
     Tree Height: 555
   - Class: rviz_common/Selection
@@ -54,6 +51,8 @@ Visualization Manager:
       Enabled: true
       Name: Marker
       Namespaces:
+        cube: true
+        line: true
         sphere: true
       Topic:
         Depth: 5
@@ -108,6 +107,32 @@ Visualization Manager:
       Use Fixed Frame: true
       Use rainbow: true
       Value: true
+    - Class: rviz_default_plugins/TF
+      Enabled: true
+      Filter (blacklist): ""
+      Filter (whitelist): ""
+      Frame Timeout: 15
+      Frames:
+        All Enabled: true
+        map:
+          Value: true
+        sphere.1:
+          Value: true
+        workspace:
+          Value: true
+      Marker Scale: 1
+      Name: TF
+      Show Arrows: true
+      Show Axes: true
+      Show Names: false
+      Tree:
+        map:
+          sphere.1:
+            {}
+          workspace:
+            {}
+      Update Interval: 0
+      Value: true
   Enabled: true
   Global Options:
     Background Color: 48; 48; 48
@@ -154,25 +179,25 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz_default_plugins/Orbit
-      Distance: 8.184386253356934
+      Distance: 0.9904917478561401
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
         Swap Stereo Eyes: false
         Value: false
       Focal Point:
-        X: 0
-        Y: 0
-        Z: 0
+        X: 4.0435004234313965
+        Y: 4.864286422729492
+        Z: 6.260623455047607
       Focal Shape Fixed Size: true
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 1.4103972911834717
+      Pitch: 0.6377651691436768
       Target Frame: <Fixed Frame>
       Value: Orbit (rviz)
-      Yaw: 6.048582553863525
+      Yaw: 0.9859733581542969
     Saved: ~
 Window Geometry:
   Displays:
@@ -190,5 +215,5 @@ Window Geometry:
   Views:
     collapsed: false
   Width: 1200
-  X: 2687
-  Y: 195
+  X: 1419
+  Y: 76

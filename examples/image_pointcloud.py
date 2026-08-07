@@ -21,5 +21,5 @@ if __name__ == '__main__':
     # add a sphere marker as a persistent marker to the RVizVisualizer
     image_bgr = cv2.imread(os.path.join(os.path.dirname(__file__), '../docs/assets/CoralFish.png'))
     pc2_message = create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], reference_frame='map')
-    rv.add_pointcloud('the_image', pc2_message)
+    rv.pub_pointcloud('the_image', pc2_message)
     rospy.spin()

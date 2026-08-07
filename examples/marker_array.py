@@ -30,6 +30,6 @@ if __name__ == '__main__':
     rv = RvizVisualizer()
     # add a marker array
     marker_array = create_marker_array((9, 3), (0.5, 0.5), (0.46, 0.46, 0.01))
-    rv.add_persistent_marker_array(marker_array)
+    rv.pub_marker_array('9x3_array', marker_array)
 
     rospy.spin()

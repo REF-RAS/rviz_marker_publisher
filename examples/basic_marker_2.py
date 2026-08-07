@@ -16,7 +16,7 @@ import rclpy
 from rclpy.node import Node
 import rviz_marker
 from rviz_marker import RvizVisualizer, get_logger
-logger = get_logger('test_rv_node')
+logger = get_logger()
 
 def main():
     rclpy.init()
@@ -25,18 +25,15 @@ def main():
     rv = RvizVisualizer(the_node)
     rviz_marker.spin_in_thread(the_node)
     # remove existing markers
-    delete_marker = rviz_marker.create_delete_all_marker(reference_frame='map')
-    rv.pub_temporary_marker(delete_marker)
-    # wait
-    logger.info('waiting for 2 seconds')
+    rv.delete_all_in_rviz()
     time.sleep(2.0)   
     # add a group of markers for 'work_area'
     sphere_marker = rviz_marker.create_sphere_marker(name='work_area', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.add_persistent_marker(sphere_marker) 
+    rv.publish(sphere_marker) 
     axis_marker = rviz_marker.create_axisplane_marker(name='work_area', id=2, bbox2d=[-1, -1, 1, 1], offset=0, reference_frame='map', axes='xy', rgba=[0.5, 0.5, 1.0])
-    rv.add_persistent_marker(axis_marker) 
+    rv.publish(axis_marker) 
     arrow_marker = rviz_marker.create_arrow_marker(name='work_area', id=3, xyzrpy=[1, 1, 1, 0, 3.14, 0], reference_frame='map', scale=0.50, rgba=[0.0, 1.0, 0.5, 1.0])
-    rv.add_persistent_marker(arrow_marker)     
+    rv.publish(arrow_marker)     
     input('Press Enter to terminate')
     rclpy.shutdown()
 

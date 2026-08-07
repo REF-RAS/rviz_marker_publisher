@@ -17,6 +17,6 @@ from rviz_marker.rviz_tools import *
 if __name__ == '__main__':
     rospy.init_node('test_rv_node', anonymous=False)    
     rv = RvizVisualizer(topic_marker='rviz_marker', topic_cloud='rviz_cloud')
-    rv.add_persistent_marker(create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', dimensions=0.20, rgba=[1.0, 0.5, 0.5, 1.0])) 
+    rv.publish(create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', dimensions=0.20, rgba=[1.0, 0.5, 0.5, 1.0])) 
 
     rospy.spin()

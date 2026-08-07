@@ -11,16 +11,28 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import rospy
-from rviz_marker.rviz_tools import *
+import time
+import rclpy
+from rclpy.node import Node
+import rviz_marker
+from rviz_marker import RvizVisualizer, get_logger
+logger = get_logger()
 
-if __name__ == '__main__':
-    rospy.init_node('test_rv_node', anonymous=False)   
+def main():
+    rclpy.init()
+    the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer(pub_period_marker=0.05)
+    rv = RvizVisualizer(the_node, pub_marker_cycle=0.005)       # NOTE: the 0.005 gives a faster refresh rate for the animation
+    rviz_marker.spin_in_thread(the_node)
+    # remove existing markers
+    delete_marker = rviz_marker.create_delete_all_marker(reference_frame='map')
+    rv.publish_once(delete_marker)
+    # wait
+    logger.info('waiting for 2 seconds')
+    time.sleep(2.0)  
     # add a sphere marker as a persistent marker to the RVizVisualizer
-    sphere_marker = create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', dimensions=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.add_persistent_marker(sphere_marker, pub_period=0.1) 
+    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    rv.publish(sphere_marker, pub_cycle=0.1) 
 
     # change the pose of the sphere marker in a loop for a basic animation
     dx = 0.1
@@ -28,6 +40,7 @@ if __name__ == '__main__':
         pose = sphere_marker.pose
         dx = -dx if pose.position.x < 0.0 or pose.position.x > 3.0 else dx
         pose.position.x += dx  # change the x position
-        rospy.sleep(rospy.Duration(0.2))
+        time.sleep(0.1)
 
-    rospy.spin()
+    input('Press Enter to terminate')
+    rclpy.shutdown()

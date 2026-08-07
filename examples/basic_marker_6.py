@@ -11,16 +11,30 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import rospy
-from rviz_marker.rviz_tools import *
+import time
+import rclpy
+from rclpy.node import Node
+from rclpy.duration import Duration
+import rviz_marker
+from rviz_marker import RvizVisualizer, get_logger
+logger = get_logger()
 
-if __name__ == '__main__':
-    rospy.init_node('test_rv_node', anonymous=False)   
+def main():
+    rclpy.init()
+    the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer()
+    rv = RvizVisualizer(the_node)
+    rviz_marker.spin_in_thread(the_node)
+    # remove existing markers
+    delete_marker = rviz_marker.create_delete_all_marker()
+    rv.publish_once(delete_marker)
+    # wait
+    logger.info('waiting for 2 seconds')
+    time.sleep(2.0)  
     # add line markers as a temporary marker to the RVizVisualizer with a different lifetime
     for i in range(10):
-        rv.pub_temporary_marker(create_line_marker(name='line', id=i, xyz1=[i * 0.5, 0, 0], xyz2=[i * 0.5, 1, 0], reference_frame='map',
-                                                    line_width=0.02, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=rospy.Duration(i))) 
+        rv.publish_once(rviz_marker.create_line_marker(name='line', id=i, xyz1=[i * 0.5, 0, 0], xyz2=[i * 0.5, 1, 0], reference_frame='map',
+                                                    line_width=0.02, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=Duration(seconds=1))) 
  
-    rospy.spin()
+    input('Press Enter to terminate')
+    rclpy.shutdown()

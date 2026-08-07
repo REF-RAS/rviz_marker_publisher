@@ -160,9 +160,9 @@ rv.add_persistent_marker(sphere_marker, pub_period=0.4)
 ```
 However, the `RvizVisualizer` has a global lower period limit and the default is 1.0 second. To use a shorter period, the global limit has to be changed as well.
 ```python
-rv = RvizVisualizer(pub_period_marker=0.1)
+rv = RvizVisualizer(pub_marker_cycle=0.1)
 ``` 
-The parameter `pub_period_marker` sets the lowest publish cycle to 0.1 second for markers.   
+The parameter `pub_marker_cycle` sets the lowest publish cycle to 0.1 second for markers.   
 
 #### Publish Transforms Messages for a Persistent Marker
 
@@ -225,7 +225,7 @@ The continued publishing of markers makes it possible to create basic animation 
 
 ```python
     # create the RVizVisualizer with a short publish cycle
-    rv = RvizVisualizer(pub_period_marker=0.05)
+    rv = RvizVisualizer(pub_marker_cycle=0.05)
     # add a sphere marker as a persistent marker to the RVizVisualizer
     sphere_marker = create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', dimensions=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.add_persistent_marker(sphere_marker, pub_period=0.1) 
@@ -312,11 +312,11 @@ The following table lists the config parameters of `RVizVisualizer`.
 
 | Parameters | Remarks | Default |
 | --------   | ------  | ------  |
-| `pub_period_marker` | The shortest period cycle of publishing markers | 1.0 second |
-| `pub_period_cloud` | The shortest period cycle of publishing point clouds | 1.0 second |
+| `pub_marker_cycle` | The shortest period cycle of publishing markers | 1.0 second |
+| `pub_cloud_cycle` | The shortest period cycle of publishing point clouds | 1.0 second |
 | `topic_marker` | The topic name to which markers are published | `/visualization_marker` |
 | `topic_cloud` | The topic name to which pointclouds are published | `/visualization_cloud` |
-| `pub_temp_marker_delay` | The length of delay publishing temporary markers | 0.2 seconds |
+| `pub_marker_delay` | The delay publishing once-off markers | 0.2 seconds |
 
 ## API Reference
 
@@ -330,4 +330,4 @@ Robotics and Autonomous Systems, Research Engineering Facility <br />
 Research Infrastructure <br />
 Queensland University of Technology <br />
 
-Latest update: May 2024
+Latest update: Aug 2026

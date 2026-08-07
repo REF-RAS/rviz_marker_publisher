@@ -26,5 +26,5 @@ if __name__ == '__main__':
     logger.info(f'mesh_file location: {teapot_mesh}')
     mesh_marker = create_mesh_marker(name='teapot', id=1, file_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
                                      reference_frame='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
-    rv.add_persistent_marker(mesh_marker) 
+    rv.publish(mesh_marker) 
     rospy.spin()

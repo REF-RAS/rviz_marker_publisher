@@ -21,6 +21,6 @@ if __name__ == '__main__':
     # add a cylinder marker
     cylinder_marker = create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], reference_frame='map',
                                                 dimensions=[0.2, 0.2, 0.5], rgba=[1.0, 1.0, 0.5, 0.5])
-    rv.add_persistent_marker(cylinder_marker)
+    rv.publish(cylinder_marker)
 
     rospy.spin()

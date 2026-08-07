@@ -18,8 +18,6 @@ __status__ = 'Development'
 import yaml, os, time, numbers, threading, random, traceback
 from enum import Enum
 from collections import defaultdict
-from dataclasses import dataclass
-from typing import Any, Tuple
 import cv2
 import numpy as np
 import rclpy, tf2_ros
@@ -110,7 +108,7 @@ def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=N
     the_marker.color = ColorRGBA(r=color[0], g=color[1], b=color[2], a=color[3])       
     return the_marker    
     
-def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
+def create_delete_marker(name:str, id:int) -> Marker:
     """ Returns a Marker object specified to delete a marker
 
     :param name: the name space of the marker
@@ -120,33 +118,27 @@ def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
     """
     the_marker = _create_marker(name, id)
     the_marker.action = Marker.DELETE
-    if frame_id is not None:
-        the_marker.header.frame_id = frame_id
     return the_marker
     
-def create_delete_all_marker(frame_id:str=None) -> Marker:
+def create_delete_all_marker() -> Marker:
     """ Returns a Marker object specified to delete all markers
 
     :param reference_frame: the reference frame, defaults to None
     :return: the Marker object for deleting all markers
     """
-    the_marker = Marker()
+    the_marker = _create_marker(None, None)
     the_marker.action = Marker.DELETEALL
-    if frame_id is not None:
-        the_marker.header.frame_id = frame_id
     return the_marker   
 
-def create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
+def create_delete_all_marker_array() -> MarkerArray:
     """ Returns a Marker object specified to delete all markers
 
     :param reference_frame: the reference frame, defaults to None
     :return: the Marker object for deleting all markers
     """
     the_marker_array = MarkerArray()
-    the_marker = Marker()
+    the_marker = _create_marker(None, None)
     the_marker.action = Marker.DELETEALL
-    if frame_id is not None:
-        the_marker.header.frame_id = frame_id
     the_marker_array.markers.append(the_marker) 
     return the_marker_array   
 
@@ -463,13 +455,13 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
     cloud_point_list = cloud_data.tolist()
     return point_cloud2.create_cloud(Header(frame_id = reference_frame), fields, cloud_point_list)
 
-def create_empty_pointcloud(frame_id:str=None):
+def create_empty_pointcloud():
     fields = [
         PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
         PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
         PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
     ]
-    return point_cloud2.create_cloud(Header(frame_id=frame_id), fields, [])
+    return point_cloud2.create_cloud(Header(), fields, [])
 
 # helper function for testing
 # call to spin this node 
@@ -521,24 +513,11 @@ class PublishTopicManager():
         message_cls, pub = self.topics_dict[topic]
         return pub
 
-    def get_message_cls_of_topic(self, topic:str) -> type:
-        message_cls, pub = self.topics_dict[topic]
-        return message_cls    
-
-@dataclass
-class RvizObjectModel():
-    the_object: Any
-    topic: str
-    pub_time: float = None
-    tf_frame: str = None
-    ns: str = None
-    id: int = None
-
 class RvizVisualizer():
     """ A publisher of markers, which handles persistent markers, which is published repeatedly and temporary markers,
         which are published once.
     """
-    def __init__(self, node:Node, fixed_frame:str='map', callback_group=None, **config_dict):
+    def __init__(self, node:Node, callback_group=None, **config_dict):
         """ The constructur
 
         :param node: the node running this RVizVisualizer object
@@ -549,31 +528,29 @@ class RvizVisualizer():
         :param topic_marker: the topic used to publish markers, defaults to visualization_marker
         :param topic_cloud: the topic used to publish point cloud, defaults to visualization_cloud     
         """
-        self.object_queue_lock = threading.RLock()
+        self.lock = threading.RLock()
         # input parameter
         self._node = node
-        self._fixed_frame = fixed_frame
         # constant
         # initialize callback group
         self.callback_group = ReentrantCallbackGroup() if callback_group is None else callback_group
         # create qos profile
-        self._default_qos_profile = QoSProfile(durability=QoSDurabilityPolicy.VOLATILE, reliability=QoSReliabilityPolicy.RELIABLE, 
-                                               history=QoSHistoryPolicy.KEEP_LAST, depth=1)
+        self._default_qos_profile = QoSProfile(durability=QoSDurabilityPolicy.TRANSIENT_LOCAL, reliability=QoSReliabilityPolicy.BEST_EFFORT, history=QoSHistoryPolicy.KEEP_LAST, depth=5)
         # create topic manager
         self.topic_manager = PublishTopicManager(self._node, self._default_qos_profile)
         # set default topics of the three message classes and add the to the topic manager
         self.default_marker_topic = config_dict.get('default_marker_topic', '/visualization_marker')
         self.default_marker_array_topic = config_dict.get('default_marker_array_topic', '/visualization_marker_array')
         self.default_pointcloud_topic = config_dict.get('default_pointcloud_topic', '/visualization_cloud')
-        self.topic_manager.add_topic_of_message_class(self.default_marker_topic, Marker)
-        self.topic_manager.add_topic_of_message_class(self.default_marker_array_topic, MarkerArray)
-        self.topic_manager.add_topic_of_message_class(self.default_pointcloud_topic, PointCloud2)
+        self.topic_manager.add_topic_of_message_class(Marker, self.default_marker_topic)
+        self.topic_manager.add_topic_of_message_class(MarkerArray, self.default_marker_array_topic)
+        self.topic_manager.add_topic_of_message_class(PointCloud2, self.default_pointcloud_topic)
         logger.info(f'parameter default_marker_topic: "{self.default_marker_topic}" ')
         logger.info(f'parameter default_marker_array_topic: "{self.default_marker_array_topic}" ')     
         logger.info(f'parameter default_pointcloud_topic: "{self.default_pointcloud_topic}" ')
         # state variables
         self.to_refresh_now:bool = False
-        self.force_refresh:bool = False
+
         # set default values for keyword argument
         self.auto_refresh = config_dict.get('auto_refresh', True)    
         self.object_refresh_cycle = config_dict.get('object_refresh_cycle', 10.0)     
@@ -585,8 +562,8 @@ class RvizVisualizer():
         logger.info(f'parameter tf_refresh_cycle: {self.tf_refresh_cycle}')
 
         # the storage for markers
-        self.objects_queue:list[RvizObjectModel] = []                 # RvizObjectModel (topic, the_object, pub_time, tf_frame, ns, id)
-        self.best_effort_objects_queue:list[RvizObjectModel] = []    
+        self.objects_dict = defaultdict(lambda: None)  # (marker_namespace, marker_id) -> marker dict (topic, object, class (marker/marker_array/pointcloud), pub_time)
+        self.best_effort_objects_queue:list = []       # marker dict (topic, marker/marker_array/pointcloud, pub_time)
 
         self.to_delete_all_pointclouds = False                  # a flag to notify the pointcloud callback to clear all 
         # setup tf publish
@@ -598,11 +575,10 @@ class RvizVisualizer():
         self.timer_best_effort_pub_cycle = self._node.create_timer(self.best_effort_pub_cycle, self._cb_timer_best_effort, callback_group=self.callback_group)
         self.timer_object_refresh_cycle = self._node.create_timer(self.object_refresh_cycle, self._cb_timer_object_refresh, callback_group=self.callback_group)
 
-    def _get_object_model(self, the_object:Any) -> RvizObjectModel:
-        for object_model in self.objects_queue:
-            if object_model.the_object == the_object:
-                return object_model
-        return None
+        # self.timer_marker_viz = self._node.create_timer(self.object_refresh_cycle, self._cb_timer_marker_viz, callback_group=self.callback_group)
+        # self.timer_cloud_viz = self._node.create_timer(self.default_pub_cloud_cycle, self._cb_timer_cloud_viz, callback_group=self.callback_group)
+        # self.timer_tf = self._node.create_timer(self.tf_refresh_cycle, self._cb_timer_tf, callback_group=self.callback_group)
+        # self.timer_once_marker_viz = self._node.create_timer(self.default_pub_once_marker_cycle, self._cb_timer_once_marker_viz, callback_group=self.callback_group)
 
     def _get_ros_time_in_seconds(self, offset:float=None) -> float:
         if not isinstance(offset, numbers.Number):       
@@ -610,42 +586,98 @@ class RvizVisualizer():
         return self._node.get_clock().now().nanoseconds / 1e9 + offset
 
     def _cb_timer_best_effort(self):
-        with self.object_queue_lock: 
+        with self.lock: 
             current_time = self._node.get_clock().now()
             current_time_in_secs = current_time.nanoseconds / 1e9
-            object_model:RvizObjectModel
-            for object_model in list(self.best_effort_objects_queue):
-                # logger.warning(f'_cb_timer_best_effort: {object_model.pub_time is None or current_time_in_secs > object_model.pub_time} {object_model}')
-                if object_model.pub_time is None or current_time_in_secs > object_model.pub_time:
-                    the_object = object_model.the_object
-                    if isinstance(the_object, (Marker, PointCloud2)):
-                        the_object.header.stamp = current_time.to_msg()
-                    the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
+            for marker_dict in list(self.best_effort_objects_queue):
+                topic, the_object, message_cls, pub_time = marker_dict['topic'], marker_dict['object'], marker_dict['message_cls'], marker_dict['pub_time']
+                if marker_dict['pub_time'] is None or current_time_in_secs > marker_dict['pub_time']:
+                    the_object.header.stamp = current_time.to_msg()
+                    the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(topic)
                     the_publisher.publish(the_object)
-                    self.best_effort_objects_queue.remove(object_model)
-                    logger.warning(f'(_cb_timer_best_effort) published {the_object} to {object_model.topic}')
+                    self.best_effort_objects_queue.remove(marker_dict)
 
-    def _cb_timer_object_refresh(self):
-        if not self.auto_refresh and not self.force_refresh:
-            return
-        with self.object_queue_lock: 
+    def _cb_timer_once_marker_viz(self):
+        """ internal callback function 
+        :meta private:
+        """
+        with self.lock: 
             current_time = self._node.get_clock().now()
-            # current_time_in_secs = current_time.nanoseconds / 1e9
-            object_model:RvizObjectModel
-            for object_model in list(self.objects_queue):
-                # logger.warning(f'_cb_timer_object_refresh: {object_model}')
-                the_object = object_model.the_object
-                the_object.header.stamp = current_time.to_msg()
-                the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
-                the_publisher.publish(the_object)   
+            current_time_in_secs = current_time.nanoseconds / 1e9
+            # publish the once-off markers
+            for marker_dict in list(self.once_marker_list):
+                marker = marker_dict['marker']
+                if marker_dict['pub_time'] is None or current_time_in_secs > marker_dict['pub_time']:
+                    marker.header.stamp = current_time.to_msg()
+                    self.marker_pub.publish(marker)
+                    self.once_marker_list.remove(marker_dict)
+            # publish the once-off marker arrays
+            for marker_dict in list(self.once_marker_array_list):
+                marker_array = marker_dict['marker_array']
+                if marker_dict['pub_time'] is None or current_time_in_secs > marker_dict['pub_time']:
+                    marker.header.stamp = current_time.to_msg()
+                    self.marker_array_pub.publish(marker_array)
+                    self.once_marker_array_list.remove(marker_dict)  
+
+    def _cb_timer_marker_viz(self):
+        """ internal callback function 
+        :meta private:
+        """
+        with self.lock: 
+            # publish the persistent markers of which the pub_cycle has lapsed   
+            current_time = self._node.get_clock().now()
+            current_time_in_secs = current_time.nanoseconds / 1e9
+            for key in self.markers_dict.keys():
+                marker_dict = self.markers_dict.get(key)
+                marker = marker_dict['marker'] 
+                if marker_dict['next_time'] is None or current_time_in_secs >= marker_dict['next_time']:
+                    marker.header.stamp = current_time.to_msg()
+                    self.marker_pub.publish(marker)
+                    marker_dict['next_time'] = current_time_in_secs + marker_dict['pub_cycle']
+            # publish the persistent marker arrays 
+            for key in self.marker_arrays_dict.keys():
+                marker_array_dict = self.marker_arrays_dict[key]
+                marker_array = marker_array_dict['marker_array'] 
+                if marker_array_dict['next_time'] is None or current_time_in_secs >= marker_array_dict['next_time']:
+                    marker.header.stamp = current_time.to_msg()
+                    self.marker_array_pub.publish(marker_array)
+                    marker_array_dict['next_time'] = current_time_in_secs + marker_array_dict['pub_cycle']                
+                  
+    def _cb_timer_cloud_viz(self):
+        """ internal callback function 
+        :meta private:
+        """
+        with self.lock:   
+            if self.to_delete_all_pointclouds:
+                self.to_delete_all_pointclouds = False
+                # publish the empty pointcloud to clear 
+                empty_pointcloud = create_empty_pointcloud()
+                empty_pointcloud.header.frame_id = 'map'
+                empty_pointcloud.header.stamp = self._node.get_clock().now().to_msg()
+                self.cloud_pub.publish(empty_pointcloud)
+                # clear the pointclouds_dict
+                self.pointclouds_dict.clear()
+                return
+
+            # publish the persistent pointclouds
+            for pointcloud_dict in self.pointclouds_dict.values():
+                pointcloud = pointcloud_dict['pointcloud']
+                current_time = self._node.get_clock().now().nanoseconds / 1e9
+                if pointcloud_dict['next_time'] is None or current_time >= pointcloud_dict['next_time']:
+                    pointcloud.header.stamp = self._node.get_clock().now().to_msg()
+                    self.cloud_pub.publish(pointcloud)
+                    pointcloud_dict['next_time']  = current_time + pointcloud_dict['pub_period']
 
     def _cb_timer_tf(self):
         """ internal callback function 
         :meta private:
         """
-        with self.object_queue_lock:   
+        with self.lock:   
             for custom_tf in self.tfs_dict.values():
-                name, parent_frame, pose = custom_tf['frame'], custom_tf['parent_frame'], custom_tf['pose']  
+                name, parent_frame, pose = custom_tf['frame'], custom_tf['parent_frame'], custom_tf['pose']
+                # xyzq = pose_to_xyzq(pose)
+                # self.tf_pub.sendTransform(xyzq[:3], xyzq[3:], self._node.get_clock().now().to_msg(), name, parent_frame)  
+                # pose if of type Pose    
                 self._pub_transform(name, pose, parent_frame)  
 
     # internal function: publish the transform of a specific named object
@@ -675,66 +707,49 @@ class RvizVisualizer():
             raise TypeError(f'A parameter is invalid')
         self.tf_broadcaster.sendTransform(pose_tools.pose_stamped_to_transform_stamped(pose_stamped, name))
 
-    def get_default_topic(self, the_object:Any) -> str:
-        if isinstance(the_object, Marker):
-            return self.default_marker_topic
-        elif isinstance(the_object, MarkerArray):
-            return self.default_marker_array_topic
-        elif isinstance(the_object, PointCloud2):
-            return self.default_pointcloud_topic
-        return None
+    def pub_marker(self, marker:Marker, pub_cycle:float=None, pub_tf:bool=False) -> Marker:
+        """ Add a persistent marker
 
-    def publish(self, the_object:Any, topic:str=None, pub_tf:bool=False) -> None:
-        """ Publish an object to rviz and again if auto-refresh is true
-
-        :param the_object: A object to be published
-        :param topic: the topic to publish to
+        :param marker: A marker to be persistently published
+        :param pub_cycle: The rate of publishing, default None if same as the global pub cycle
         :param pub_tf: if True, the pose of the marker is published as a tf frame
         :return: The mrker
         """
-        assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
-        topic = self.get_default_topic(the_object) if topic is None else topic
-        self.publish_best_effort(the_object, topic, delay=0.0)
-        with self.object_queue_lock:
-            # (topic, object, pub_time, tf_frame, ns, id)
-            if pub_tf and isinstance(the_object, Marker):
-                tf_frame = f'{the_object.ns}.{the_object.id}'
-                self.publish_custom_tf(tf_frame, the_object.header.frame_id, the_object.pose)
-                self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, tf_frame=tf_frame, ns=the_object.ns, id=the_object.id))
-            elif isinstance(the_object, Marker):
-                self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, ns=the_object.ns, id=the_object.id))
-            else:
-                self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic))
-        
+        assert marker is not None, 'RvizVisualizer (add_persistent_marker): Parameter (marker) cannot be None'
+        with self.lock:
+            pub_cycle = 0 if pub_cycle is None else pub_cycle
+            self.markers_dict[marker.ns, marker.id] = {'marker': marker, 'pub_cycle': pub_cycle, 'next_time': None, 'pub_tf': pub_tf}
+            if pub_tf:
+                # self.add_custom_tf(f'{marker.ns}.{marker.id}', marker.header.frame_id, marker.pose)
+                self.pub_custom_tf(f'{marker.ns}.{marker.id}', marker.header.frame_id, marker.pose)
+            return marker
             
-    def publish_best_effort(self, the_object:Any, topic:str=None, delay:float=None) -> None:
+    def pub_marker_once(self, marker:Marker, delay:float=0.0) -> Marker:
         """ Add an once-only marker, which is to be published only once
 
         :param marker: A marker to be published only once
         :param delay: The delay     
         :return: The marker
         """
-        assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
-        assert delay is None or isinstance(delay, numbers.Number), 'invalid arameter (delay): must be a float (seconds) or None (now)'
-        topic = self.get_default_topic(the_object) if topic is None else topic   
-        pub_time = None if delay is None else self._get_ros_time_in_seconds() + delay
-        with self.object_queue_lock:
-            # self.best_effort_objects_queue.append({'object': the_object, 'topic': topic, 'pub_time': pub_time})     
-            self.best_effort_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time))
+        assert marker is not None, 'RvizVisualizer (pub_temporary_marker): Parameter (marker) cannot be None'
+        with self.lock:
+            self.once_marker_list.append({'marker': marker, 'pub_time': self._get_ros_time_in_seconds(delay)})      
+            return marker 
 
-    def publish_all_objects_again(self) -> None:
-        """ publish all the objects once again
-        
+    def pub_marker_array(self, name:str, marker_array:MarkerArray, pub_cycle:float=None) -> None:
+        """ Add a marker array
+
+        :param marker_array: A marker array to be persistently published
+        :param pub_cycle: The rate of publishing, default None if same as the global pub cycle
+        :param pub_tf: if True, the pose of the marker is published as a tf frame
+        :return: The index of the marker array
         """
-        def execute_once():
-            self.force_refresh = True
-            self._cb_timer_object_refresh()
-            one_shot_timer.cancel()
-            self._node.destroy_timer(one_shot_timer)
-
-        one_shot_timer = self._node.create_timer(0.0, execute_once)
+        assert marker_array is not None, 'RvizVisualizer (add_persistent_marker_array): Parameter (marker_array) cannot be None'
+        with self.lock:
+            pub_cycle = 0 if pub_cycle is None else pub_cycle
+            self.marker_arrays_dict[name] = {'marker_array': marker_array, 'pub_cycle': pub_cycle, 'next_time': None}
         
-    def publish_custom_tf(self, name:str, parent_frame:str, pose:Pose) -> None:
+    def pub_custom_tf(self, name:str, parent_frame:str, pose:Pose) -> None:
         """ Add a custom transform to the rviz visualizer, which is broadcast regularly
 
         :param name: the name of the transform
@@ -746,87 +761,116 @@ class RvizVisualizer():
             raise AssertionError(f'RvizVisualizer (add_custom_tf): No parameter can be None')
         self.tfs_dict[name] = {'pose': pose, 'frame':name, 'parent_frame': parent_frame}       
         
-    def delete_object(self, the_object:Any):
-        assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
-        object_model:RvizObjectModel = self._get_object_model(the_object)
-        if object_model is None:
-            logger.warning(f'(rviz_tools) delete_object: object not exists')
-            return
-        with self.object_queue_lock:
-            # attempt to send a delete command for the object anyway
-            if isinstance(the_object, Marker):
-                self._delete_marker(the_object)
-            elif isinstance(the_object, MarkerArray):
-                self._delete_marker_array(the_object)
-            elif isinstance(the_object, PointCloud2):
-                self._delete_pointcloud(the_object)
-            # delete the cache
-            self.objects_queue.remove(object_model)
+    def delete_all_persistent_markers(self) -> None:
+        """ Remove all persistent markers from RViz and this object
 
-    def _delete_marker(self, the_object:Marker):
-        assert isinstance(the_object, (Marker)), 'invalid parameter (the_object): must be a Marker'
-        object_model:RvizObjectModel = self._get_object_model(the_object)
-        assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        the_object.action = Marker.DELETE
-        self.publish_best_effort(object_model.the_object, object_model.topic, delay=0.0)
-        # remove tf_frame if defined
-        if object_model.tf_frame is not None:
-            if object_model.tf_frame in self.tfs_dict:
-                del self.tfs_dict[object_model.tf_frame]
-
-    def _delete_marker_array(self, the_object:Marker):
-        assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a MarkerArray'
-        object_model:RvizObjectModel = self._get_object_model(the_object)
-        assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        self.publish_best_effort(create_delete_all_marker_array(), object_model.topic, delay=0.0)
-
-    def _delete_pointcloud(self, the_object:Marker):
-        assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a PointCloud'
-        object_model:RvizObjectModel = self._get_object_model(the_object)
-        assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        self.publish_best_effort(create_empty_pointcloud(), object_model.topic, delay=0.0)        
-            
-    def delete_all_objects(self, topics_list:list=None):
-        """ delete all objects from rviz, optionally only the topics in the topics_list
-
-        :param topics_list: the topics included, defaults to None (all default topics)
-        :type topics_list: list, optional
         """
-        if topics_list is None:
-            topics_list = [self.default_marker_topic, self.default_marker_array_topic, self.default_pointcloud_topic]
-        elif isinstance(topics_list, str):
-            topics_list = [topics_list]
-        assert isinstance(topics_list, (list, tuple)), 'invalid parameter type (topics_list): must be a str, a list of str, or None'
-        # topics deleted are not deleted again
-        topics_deleted_list = []
-        # iterate through the objects_queue
-        object_model: RvizObjectModel
-        with self.object_queue_lock:
-            for object_model in list(self.objects_queue):
-                if object_model.topic in topics_list:
-                    if object_model.topic not in topics_deleted_list:
-                        self.delete_object(object_model.the_object)
-                        topics_deleted_list.append(object_model.topic)
+        with self.lock:
+            # remove the tf associated with markers with pub_tf True
+            for marker_dict in self.markers_dict.values():
+                if marker_dict['pub_tf']:
+                    marker:Marker = marker_dict['marker']
+                    self.once_marker_list.append({'marker': create_delete_marker(marker.ns, marker.id), 
+                                                  'pub_time': self._get_ros_time_in_seconds()}) 
+                    tf_frame = f'{marker.ns}.{marker.id}'
+                    if tf_frame in self.tfs_dict:
+                        del self.tfs_dict[tf_frame]
+            self.markers_dict.clear()
 
-    def delete_all_in_rviz_by_topics(self, topics_list:list=None, frame_id:str=None):
-        if topics_list is None:
-            topics_list = [self.default_marker_topic, self.default_marker_array_topic, self.default_pointcloud_topic]
-        elif isinstance(topics_list, str):
-            topics_list = [topics_list]
-        assert isinstance(topics_list, (list, tuple)), 'invalid parameter type (topics_list): must be a str, a list of str, or None'
-        # set default frame_id if needed
-        frame_id = self._fixed_frame if frame_id is None else frame_id
-        # iterate through the topics_list
-        for topic in topics_list:
-            message_cls = self.topic_manager.get_message_cls_of_topic(topic)
-            if message_cls is None:
-                continue
-            if message_cls == Marker:
-                self.publish_best_effort(create_delete_all_marker(frame_id=frame_id), topic)
-            elif message_cls == MarkerArray:
-                self.publish_best_effort(create_delete_all_marker_array(frame_id=frame_id), topic)
-            elif message_cls == PointCloud2:
-                self.publish_best_effort(create_empty_pointcloud(frame_id=frame_id), topic)
+            
+    def delete_marker(self, name:str, id:int) -> None:
+        """ Remove a marker from RViz and this object
+
+        :param name: the name space of the marker
+        :param id: the id of the marker
+        :param frame: the reference frame
+        """
+        assert name is not None and id is not None, \
+            'RvizVisualizer (delete_marker): Parameter (any) cannot be None'
+        with self.lock:
+            if (name, id) in self.markers_dict:
+                del self.markers_dict[name, id]
+                self.pub_marker_once(create_delete_marker(name, id))
+                tf_frame = f'{name}.{id}'
+                if tf_frame in self.tfs_dict:
+                    del self.tfs_dict[tf_frame]
+
+    def delete_marker_array(self, name:str) -> None:
+        """ Remove a persistent marker from RViz and this object
+
+        :param name: the name space of the marker
+        :param id: the id of the marker
+        :param frame: the reference frame
+        """
+        assert name is not None, \
+            'RvizVisualizer (delete_marker_array): Parameter (name) cannot be None'
+        with self.lock:
+            if name in self.marker_arrays_dict:
+                marker_array:MarkerArray = self.marker_arrays_dict[name]['marker_array']
+                del self.marker_arrays_dict[name]
+                self.pub_marker_once(cre)
+
+
+            if 0 <= index < len(self.marker_arrays_dict):
+                marker_array:MarkerArray = self.marker_arrays_dict[index]['marker_array']
+                self.marker_arrays_dict.pop(index)
+                self.once_marker_list.append({'marker': create_delete_all_marker(), 
+                                               'pub_time': None}) 
+                return marker_array
+            return None
+
+    def delete_all_markers(self):
+        """ Remove all markers from RViz
+
+        """
+        self.pub_marker_once(create_delete_all_marker())
+        self.markers_dict.clear()
+
+    def delete_all_marker_arrays(self):
+        """ Remove all marker arrays from RViz
+
+        """
+        self.pub_marker_once(create_delete_all_marker_array())
+        self.marker_arrays_dict.clear()
+
+    def delete_all_pointclouds(self):
+        """ Remove all pointclouds from RViz
+
+        """
+        self.to_delete_all_pointclouds = True
+        self.pointclouds_dict.clear()
+    
+    def delete_all_in_rviz(self):
+        self.delete_all_markers()
+        self.delete_all_marker_arrays()
+        self.delete_all_pointclouds()
+
+    def pub_pointcloud(self, name:str, pointcloud:PointCloud2, pub_period:float=None) -> PointCloud2:
+        """ Add a PointCloud2 object for regular publishing
+
+        :param name: the name of the pointcloud of type str
+        :param pointcloud: an object to be published
+        :param pub_period: The rate of publishing, which cannot be smaller than 0.1 seconds
+        :return: the point cloud input parameter 
+        """
+        with self.lock:
+            pub_period = self.default_pub_cloud_cycle if pub_period is None else pub_period
+            pub_period = 0.1 if pub_period < 0.1 else pub_period
+            self.pointclouds_dict[name] = {'pointcloud': pointcloud, 'pub_period': pub_period, 'next_time': None}
+            return pointcloud
+
+    def delete_pointcloud(self, name:str) -> PointCloud2:
+        """ Remove a pointcloud from regular publishing
+
+        :param name: the name of the pointcloud of type str
+        :return: the PointCloud2 object removed
+        """
+        with self.lock:
+            if name in self.pointclouds_dict:
+                pointcloud = self.pointclouds_dict[name]  
+                del self.pointclouds_dict[name]        
+                return pointcloud
+            return None
 
 
 

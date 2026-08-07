@@ -1,3 +1,0 @@
-<launch>
-  <node type="rviz" name="rviz" pkg="rviz" args="-d $(find rviz_marker_tools)/rviz/example.rviz" />
-</launch>

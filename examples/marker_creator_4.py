@@ -21,6 +21,6 @@ if __name__ == '__main__':
     # add a path marker
     path_marker = create_path_marker(name='path', id=1, xyzlist=[(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (1, 0, 0)], reference_frame='map',
                                                 line_width=0.05, rgba=[1.0, 0.5, 0.5, 0.5])
-    rv.add_persistent_marker(path_marker)
+    rv.publish(path_marker)
 
     rospy.spin()
