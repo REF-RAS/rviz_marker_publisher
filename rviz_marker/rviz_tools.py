@@ -107,7 +107,7 @@ def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=N
         the_marker.scale = Vector3(x=1.0, y=1.0, z=1.0)
     # the color
     color = RGBAColors.validate_rgba(color)
-    the_marker.color = ColorRGBA(r=color[0], g=color[1], b=color[2], a=color[3])       
+    the_marker.color = ColorRGBA(r=float(color[0]), g=float(color[1]), b=float(color[2]), a=float(color[3]))       
     return the_marker    
     
 def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
@@ -471,6 +471,23 @@ def create_empty_pointcloud(frame_id:str=None):
     ]
     return point_cloud2.create_cloud(Header(frame_id=frame_id), fields, [])
 
+def update_marker_xyzrpy(marker:Marker, xyzrpy:list):
+    assert isinstance(xyzrpy, (list, tuple)) and len(xyzrpy) == 6, f'invalid parameter (xyzrpy): expects a list of 6 numbers'
+    pose_xyzrpy = pose_tools.pose_to_xyzrpy(marker.pose)
+    for index in range(len(xyzrpy)):
+        if xyzrpy[index] is None:
+            xyzrpy[index] = pose_xyzrpy[index]
+    marker.pose = list_to_pose(xyzrpy) 
+
+def move_marker_xyz(marker:Marker, xyz_offset:list):
+    assert isinstance(xyz_offset, (list, tuple)) and len(xyz_offset) == 3, f'invalid parameter (xyz_offset): expects a list of 3 numbers'
+    for index in range(len(xyz_offset)):
+        if xyz_offset[index] is None:
+            xyz_offset[index] = 0
+    marker.pose.position.x += xyz_offset[0]
+    marker.pose.position.y += xyz_offset[1]
+    marker.pose.position.z += xyz_offset[2]
+
 # helper function for testing
 # call to spin this node 
 def spin_in_thread(node:Node) -> None:
@@ -530,6 +547,7 @@ class RvizObjectModel():
     the_object: Any
     topic: str
     pub_time: float = None
+    update_stamp: float = True
     tf_frame: str = None
     ns: str = None
     id: int = None
@@ -538,7 +556,7 @@ class RvizVisualizer():
     """ A publisher of markers, which handles persistent markers, which is published repeatedly and temporary markers,
         which are published once.
     """
-    def __init__(self, node:Node, fixed_frame:str='map', callback_group=None, **config_dict):
+    def __init__(self, node:Node, fixed_frame:str='map', callback_group=None, _default_qos_profile=None, **config_dict):
         """ The constructur
 
         :param node: the node running this RVizVisualizer object
@@ -558,7 +576,7 @@ class RvizVisualizer():
         self.callback_group = ReentrantCallbackGroup() if callback_group is None else callback_group
         # create qos profile
         self._default_qos_profile = QoSProfile(durability=QoSDurabilityPolicy.VOLATILE, reliability=QoSReliabilityPolicy.RELIABLE, 
-                                               history=QoSHistoryPolicy.KEEP_LAST, depth=1)
+                                        history=QoSHistoryPolicy.KEEP_LAST, depth=50) if _default_qos_profile is None else _default_qos_profile
         # create topic manager
         self.topic_manager = PublishTopicManager(self._node, self._default_qos_profile)
         # set default topics of the three message classes and add the to the topic manager
@@ -618,12 +636,11 @@ class RvizVisualizer():
                 # logger.warning(f'_cb_timer_best_effort: {object_model.pub_time is None or current_time_in_secs > object_model.pub_time} {object_model}')
                 if object_model.pub_time is None or current_time_in_secs > object_model.pub_time:
                     the_object = object_model.the_object
-                    if isinstance(the_object, (Marker, PointCloud2)):
+                    if object_model.update_stamp and isinstance(the_object, (Marker, PointCloud2)):
                         the_object.header.stamp = current_time.to_msg()
                     the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
                     the_publisher.publish(the_object)
                     self.best_effort_objects_queue.remove(object_model)
-                    logger.warning(f'(_cb_timer_best_effort) published {the_object} to {object_model.topic}')
 
     def _cb_timer_object_refresh(self):
         if not self.auto_refresh and not self.force_refresh:
@@ -635,7 +652,8 @@ class RvizVisualizer():
             for object_model in list(self.objects_queue):
                 # logger.warning(f'_cb_timer_object_refresh: {object_model}')
                 the_object = object_model.the_object
-                the_object.header.stamp = current_time.to_msg()
+                if object_model.update_stamp and isinstance(the_object, (Marker, PointCloud2)):
+                    the_object.header.stamp = current_time.to_msg()
                 the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
                 the_publisher.publish(the_object)   
 
@@ -707,7 +725,7 @@ class RvizVisualizer():
                 self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic))
         
             
-    def publish_best_effort(self, the_object:Any, topic:str=None, delay:float=None) -> None:
+    def publish_best_effort(self, the_object:Any, topic:str=None, delay:float=None, update_stamp:bool=True) -> None:
         """ Add an once-only marker, which is to be published only once
 
         :param marker: A marker to be published only once
@@ -720,7 +738,7 @@ class RvizVisualizer():
         pub_time = None if delay is None else self._get_ros_time_in_seconds() + delay
         with self.object_queue_lock:
             # self.best_effort_objects_queue.append({'object': the_object, 'topic': topic, 'pub_time': pub_time})     
-            self.best_effort_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time))
+            self.best_effort_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time, update_stamp=update_stamp))
 
     def publish_all_objects_again(self) -> None:
         """ publish all the objects once again
@@ -786,7 +804,7 @@ class RvizVisualizer():
         assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
         self.publish_best_effort(create_empty_pointcloud(), object_model.topic, delay=0.0)        
             
-    def delete_all_objects(self, topics_list:list=None):
+    def delete_objects_of_topics(self, topics_list:list=None):
         """ delete all objects from rviz, optionally only the topics in the topics_list
 
         :param topics_list: the topics included, defaults to None (all default topics)
@@ -808,7 +826,7 @@ class RvizVisualizer():
                         self.delete_object(object_model.the_object)
                         topics_deleted_list.append(object_model.topic)
 
-    def delete_all_in_rviz_by_topics(self, topics_list:list=None, frame_id:str=None):
+    def delete_all_old_objets_of_topics(self, topics_list:list=None, frame_id:str=None):
         if topics_list is None:
             topics_list = [self.default_marker_topic, self.default_marker_array_topic, self.default_pointcloud_topic]
         elif isinstance(topics_list, str):
@@ -822,11 +840,30 @@ class RvizVisualizer():
             if message_cls is None:
                 continue
             if message_cls == Marker:
-                self.publish_best_effort(create_delete_all_marker(frame_id=frame_id), topic)
+                self.publish_best_effort(create_delete_all_marker(frame_id=frame_id), topic, update_stamp=True)
             elif message_cls == MarkerArray:
-                self.publish_best_effort(create_delete_all_marker_array(frame_id=frame_id), topic)
+                self.publish_best_effort(create_delete_all_marker_array(frame_id=frame_id), topic, update_stamp=False)
             elif message_cls == PointCloud2:
-                self.publish_best_effort(create_empty_pointcloud(frame_id=frame_id), topic)
+                self.publish_best_effort(create_empty_pointcloud(frame_id=frame_id), topic, update_stamp=False)
+
+    def _audit_rviz_subscriptions(self):
+        node_list = self._node.get_node_names_and_namespaces()
+        rviz_node = None
+        for name, namespace in node_list:
+            if 'rviz2' in name.lower():
+                rviz_node = (name, namespace)
+                break
+        if rviz_node:
+            node_name, node_ns = rviz_node
+            try:
+                subscriptions = self._node.get_subscriber_names_and_types_by_node(node_name, node_ns)
+                logger.info(f'subscriptions: {subscriptions}')
+            except Exception as e:
+                logger.error(f"Failed to get subscriptions: {str(e)}")
+        
+
+        
+
 
 
 

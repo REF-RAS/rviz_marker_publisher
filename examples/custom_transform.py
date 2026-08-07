@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 - Andrew Kwok Fai LUI, 
+# Copyright 2026 - Andrew Kwok Fai LUI, 
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
 __author__ = 'Andrew Lui'
-__copyright__ = 'Copyright 2024'
-__license__ = 'GPL'
+__copyright__ = 'Copyright 2026'
+__license__ = 'Non AI GPL'
 __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
@@ -27,14 +27,24 @@ def main():
     # create the RVizVisualizer 
     rv = RvizVisualizer(the_node)
     rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(3.0)
+    # remove existing markers
+    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
+    rv.delete_all_old_objets_of_topics()
+    time.sleep(2.0) 
     # add a custom transform called 'workspace'
     transform_pose = Pose()
     transform_pose.position = Point(x=1.0, y=1.0, z=1.0)
     transform_pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, q=1.0)
+    logger.info(f'(define custom tf) publish_custom_tf "workspace" at {transform_pose}')
     rv.publish_custom_tf('workspace', 'map', transform_pose)
+    time.sleep(1.0)
     # add a sphere marker as a persistent marker to the RVizVisualizer
-    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[0.5, 0, 0], reference_frame='workspace', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    logger.info('(add) create_sphere_marker in the reference frame "workspace"')
+    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[0.0, 0.0, 0.0], reference_frame='workspace', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
-
+    # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

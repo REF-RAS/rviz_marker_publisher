@@ -1,35 +1,61 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 - Andrew Kwok Fai LUI, 
+# Copyright 2026 - Andrew Kwok Fai LUI, 
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
 __author__ = 'Andrew Lui'
-__copyright__ = 'Copyright 2024'
-__license__ = 'GPL'
+__copyright__ = 'Copyright 2026'
+__license__ = 'Non AI GPL'
 __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import rospy
-from rviz_marker.rviz_tools import *
+import os, sys, time
+import cv2
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs_py import point_cloud2
+from visualization_msgs.msg import Marker, MarkerArray
+import rviz_marker
+from rviz_marker import RvizVisualizer, get_logger
+logger = get_logger()
 
 def create_marker_array(grid_dim:tuple, grid_cell_size:tuple, tile_size:tuple) -> MarkerArray:
-    marker_array = MarkerArray()
+    
+    markers_list:list[Marker] = []
     for x in range(grid_dim[0]):
         for y in range(grid_dim[1]):
             xyzrpy=[x * grid_cell_size[0], y * grid_cell_size[1], 0.0, 0, 0, 0]
-            tile = create_cube_marker_from_xyzrpy('tile', x + y * grid_dim[0], xyzrpy, reference_frame='map', 
-                                    dimensions=[tile_size[0], tile_size[1], tile_size[2]], rgba=[0.0, 0.2, 1.0, 0.5])
-            marker_array.markers.append(tile)
+            tile = rviz_marker.create_cube_marker_from_xyzrpy('tile', x + y * grid_dim[0], xyzrpy, reference_frame='map', 
+                                    scale=[tile_size[0], tile_size[1], tile_size[2]], rgba=[0.0, 0.2, 1.0, 0.5],
+                                    lifetime=5.0)
+            markers_list.append(tile)
+
+    marker_array = rviz_marker.create_marker_array(markers_list)
     return marker_array
 
-if __name__ == '__main__':
-    rospy.init_node('test_rv_node', anonymous=False)    
+def main():
+    rclpy.init()
+    the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer()
-    # add a marker array
+    rv = RvizVisualizer(the_node)
+    rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(3.0)
+    # remove existing markers
+    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
+    rv.delete_all_old_objets_of_topics()
+    time.sleep(2.0) 
+    # add a marker array of 9x3 cubes with lifetime of 5.0 seconds
+    logger.info('(add) create_marker_array of a 9x3 thin cubes with lifetime of 5 secs')
     marker_array = create_marker_array((9, 3), (0.5, 0.5), (0.46, 0.46, 0.01))
-    rv.pub_marker_array('9x3_array', marker_array)
+    rv.publish_best_effort(marker_array)
+    # pause before terminate until Enter is press
+    input('Press Enter to terminate')
+    rclpy.shutdown()
 
-    rospy.spin()
+if __name__ == '__main__':
+    main()

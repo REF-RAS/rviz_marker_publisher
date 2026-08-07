@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 - Andrew Kwok Fai LUI, 
+# Copyright 2026 - Andrew Kwok Fai LUI, 
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
 __author__ = 'Andrew Lui'
-__copyright__ = 'Copyright 2024'
-__license__ = 'GPL'
+__copyright__ = 'Copyright 2026'
+__license__ = 'Non AI GPL'
 __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
@@ -25,16 +25,18 @@ def main():
     # create the RVizVisualizer 
     rv = RvizVisualizer(the_node)
     rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(3.0)
     # remove existing markers
-    delete_marker = rviz_marker.create_delete_all_marker()
-    rv.publish_once(delete_marker)
-    # wait
-    logger.info('waiting for 2 seconds')
+    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
+    rv.delete_all_old_objets_of_topics()
     time.sleep(2.0)  
     # add line markers as a temporary marker to the RVizVisualizer with a different lifetime
+    logger.info('(add) create_line_marker with lifetime of 5 seconds 10 times (ensure the rviz Marker topic has depth >= 10)')    
     for i in range(10):
-        rv.publish_once(rviz_marker.create_line_marker(name='line', id=i, xyz1=[i * 0.5, 0, 0], xyz2=[i * 0.5, 1, 0], reference_frame='map',
-                                                    line_width=0.02, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=Duration(seconds=1))) 
- 
+        rv.publish_best_effort(rviz_marker.create_line_marker(name='line', id=i, xyz1=[-2.5 + i * 0.5, 0, 0], xyz2=[-2.5 + i * 0.5, 1, 0], reference_frame='map',
+                                                    line_width=0.05, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=Duration(seconds=5))) 
+    # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 - Andrew Kwok Fai LUI, 
+# Copyright 2026 - Andrew Kwok Fai LUI, 
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
 __author__ = 'Andrew Lui'
-__copyright__ = 'Copyright 2024'
-__license__ = 'GPL'
+__copyright__ = 'Copyright 2026'
+__license__ = 'Non AI GPL'
 __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
@@ -22,18 +22,20 @@ def main():
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer(the_node, pub_marker_cycle=0.1)
+    rv = RvizVisualizer(the_node)
     rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(3.0)
     # remove existing markers
-    delete_marker = rviz_marker.create_delete_all_marker()
-    rv.publish_once(delete_marker)
-    # wait
-    logger.info('waiting for 2 seconds')
+    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
+    rv.delete_all_old_objets_of_topics()
     time.sleep(2.0)  
     # add sphere markers as a temporary marker to the RVizVisualizer
+    logger.info('(add) create_sphere_marker 5 times')
     for i in range(5):
         marker = rviz_marker.create_sphere_marker(name='sphere', id=i, xyz=[1 + i * 0.2, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-        rv.publish_once(marker)
-
+        rv.publish_best_effort(marker)
+    # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

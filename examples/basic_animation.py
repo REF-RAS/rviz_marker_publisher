@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 - Andrew Kwok Fai LUI, 
+# Copyright 2026 - Andrew Kwok Fai LUI, 
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
 __author__ = 'Andrew Lui'
-__copyright__ = 'Copyright 2024'
-__license__ = 'GPL'
+__copyright__ = 'Copyright 2026'
+__license__ = 'Non AI GPL'
 __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
@@ -22,25 +22,30 @@ def main():
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer(the_node, pub_marker_cycle=0.005)       # NOTE: the 0.005 gives a faster refresh rate for the animation
+    rv = RvizVisualizer(the_node)
     rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(3.0)
     # remove existing markers
-    delete_marker = rviz_marker.create_delete_all_marker(reference_frame='map')
-    rv.publish_once(delete_marker)
-    # wait
-    logger.info('waiting for 2 seconds')
-    time.sleep(2.0)  
+    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
+    rv.delete_all_old_objets_of_topics()
+    time.sleep(2.0) 
     # add a sphere marker as a persistent marker to the RVizVisualizer
+    logger.info('(add) create_sphere_marker and wait for 5 seconds')
     sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish(sphere_marker, pub_cycle=0.1) 
+    rv.publish_best_effort(sphere_marker) 
 
     # change the pose of the sphere marker in a loop for a basic animation
+    logger.info('(animation) move the sphere between x = (0.0, 3.0)')
     dx = 0.1
     for i in range(100):
         pose = sphere_marker.pose
         dx = -dx if pose.position.x < 0.0 or pose.position.x > 3.0 else dx
-        pose.position.x += dx  # change the x position
+        rviz_marker.move_marker_xyz(sphere_marker, [dx, 0.0, 0.0])
+        rv.publish_best_effort(sphere_marker)
         time.sleep(0.1)
 
+    # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()
