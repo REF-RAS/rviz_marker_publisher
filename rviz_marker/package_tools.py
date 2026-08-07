@@ -33,7 +33,22 @@ class PackageFile():
             return 'file://' + resolved_path
         except:
             raise
-        
+
+    def resolve_to_valid_uri(uri_or_path:str) -> str:
+        """
+        Convert a uri or a file path into a uri starting with file:// or http://.
+
+        :param uri_or_path: a file, package or http uri or a full or package relative file path
+        :type uri_or_path: str
+        :return: the file prototcol uri
+        :rtype: str
+        """
+        if uri_or_path.startswith(('http://', 'https://')):
+            return uri_or_path
+        elif uri_or_path.startswith(('package://')):
+            return uri_or_path
+        return PackageFile.resolve_to_file_uri(uri_or_path)
+
     def resolve_to_file_or_http_uri(uri_or_path:str) -> str:
         """
         Convert a uri or a file path into a uri starting with file:// or http://.

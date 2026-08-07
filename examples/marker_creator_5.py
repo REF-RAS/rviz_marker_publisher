@@ -1,26 +1,49 @@
 #!/usr/bin/env python3
 
-# Copyright 2024 - Andrew Kwok Fai LUI, 
+# Copyright 2026 - Andrew Kwok Fai LUI, 
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
 __author__ = 'Andrew Lui'
-__copyright__ = 'Copyright 2024'
-__license__ = 'GPL'
+__copyright__ = 'Copyright 2026'
+__license__ = 'Non AI GPL'
 __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import rospy
-from rviz_marker.rviz_tools import *
+import os, sys, time
+import cv2
+import rclpy
+from rclpy.node import Node
+from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs_py import point_cloud2
+from visualization_msgs.msg import Marker, MarkerArray
+import rviz_marker
+from rviz_marker import RvizVisualizer, get_logger
+logger = get_logger()
+
+def main():
+    rclpy.init()
+    the_node = Node(node_name='test_rv_node') 
+    # create the RVizVisualizer 
+    rv = RvizVisualizer(the_node)
+    rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(3.0)
+    # remove existing markers
+    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
+    rv.delete_all_objects_by_topics()
+    time.sleep(2.0) 
+    # add a cylinder marker
+    logger.info('(add) create_cylinder_marker')
+    cylinder_marker = rviz_marker.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], reference_frame='map',
+                                                scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])
+    rv.publish_and_register(cylinder_marker)
+
+    # pause before terminate until Enter is press
+    input('Press Enter to terminate')
+    rclpy.shutdown()
 
 if __name__ == '__main__':
-    rospy.init_node('test_rv_node', anonymous=False)    
-    # create the RVizVisualizer 
-    rv = RvizVisualizer()
-    # add a cylinder marker
-    cylinder_marker = create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], reference_frame='map',
-                                                dimensions=[0.2, 0.2, 0.5], rgba=[1.0, 1.0, 0.5, 0.5])
-    rv.publish(cylinder_marker)
-
-    rospy.spin()
+    main()

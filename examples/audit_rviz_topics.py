@@ -11,13 +11,12 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import os, sys, time
-import cv2
+import time
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import PointCloud2, PointField
-from sensor_msgs_py import point_cloud2
+from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import Marker, MarkerArray
+from rosidl_runtime_py.utilities import get_message
 import rviz_marker
 from rviz_marker import RvizVisualizer, get_logger
 logger = get_logger()
@@ -31,19 +30,22 @@ def main():
     # wait for the discovery and matching on the dds layer
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(3.0)
+    # initialize variable
+    visualization_topics = []
+    # audit rviz topics
+    subscriptions_dict = rv.audit_rviz_subscriptions()
+    for topic, message_names_list in subscriptions_dict.items():
+        for message_name in message_names_list:
+            message_class = get_message(message_name)
+            if message_class in (Marker, MarkerArray, PointCloud2):
+                visualization_topics.append(topic)
+                logger.info(f'the topic {topic} is one of the visualization types')
+
     # remove existing markers
-    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
-    rv.delete_all_objects_by_topics()
-    time.sleep(2.0) 
-    # add a small cube marker
-    logger.info('(add) create_cube_marker_from_bbox 2 times')
-    cube_marker_1 = rviz_marker.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[0, 0, 0, 0.2, 0.2, 0.2], reference_frame='map',
-                                               rgba=[1.0, 0.5, 0.5, 0.5])
-    rv.publish_and_register(cube_marker_1)
-    # add a larger cube marker
-    cube_marker_2 = rviz_marker.create_cube_marker_from_bbox(name='cube', id=2, bbox3d=[1, 1, 0, 1.5, 1.5, 1.0], reference_frame='map',
-                                               rgba=[0.0, 1.0, 0.5, 0.5])
-    rv.publish_and_register(cube_marker_2)
+    logger.info('(reset rviz) delete all objects in the rviz subscribed topics and wait for 2 secs')
+    logger.info(f'(reset rviz) the subscribed topics: {visualization_topics}')
+    rv.delete_all_objects_by_topics(visualization_topics)
+    time.sleep(2.0)   
 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')

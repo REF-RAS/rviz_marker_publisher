@@ -28,20 +28,20 @@ def main():
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(3.0)
     # remove existing markers
-    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
-    rv.delete_all_old_objets_of_topics()
+    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
+    rv.delete_all_objects_by_topics()
     time.sleep(2.0)  
     # wait
     logger.info('waiting for 2 seconds')
     time.sleep(2.0)    
     # add a sphere marker as a persistent marker to the RVizVisualizer
     sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.40, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish(sphere_marker)
+    rv.publish_and_register(sphere_marker)
     # wait
     logger.info('waiting for 2 seconds')
     time.sleep(2.0)
     # remove existing markers
-    rv.delete_objects_of_topics()   
+    rv.delete_registered_objects_by_topics()   
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

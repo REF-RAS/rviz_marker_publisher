@@ -29,13 +29,13 @@ def main():
     time.sleep(3.0)
     # remove existing markers
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
-    rv.delete_all_old_objets_of_topics()
+    rv.delete_all_objects_by_topics()
     time.sleep(2.0)  
     # add sphere markers as a temporary marker to the RVizVisualizer
     logger.info('(add) create_sphere_marker 5 times')
     for i in range(5):
         marker = rviz_marker.create_sphere_marker(name='sphere', id=i, xyz=[1 + i * 0.2, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-        rv.publish_best_effort(marker)
+        rv.publish_best_effort_once(marker)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

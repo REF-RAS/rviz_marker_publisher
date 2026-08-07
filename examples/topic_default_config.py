@@ -26,7 +26,7 @@ def main():
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer(the_node)
+    rv = RvizVisualizer(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='rviz_cloud')
     rviz_marker.spin_in_thread(the_node)
     # wait for the discovery and matching on the dds layer
     logger.info('(wait) discovery and matching of publishers and subscribers')
@@ -35,16 +35,10 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a small cube marker
-    logger.info('(add) create_cube_marker_from_bbox 2 times')
-    cube_marker_1 = rviz_marker.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[0, 0, 0, 0.2, 0.2, 0.2], reference_frame='map',
-                                               rgba=[1.0, 0.5, 0.5, 0.5])
-    rv.publish_and_register(cube_marker_1)
-    # add a larger cube marker
-    cube_marker_2 = rviz_marker.create_cube_marker_from_bbox(name='cube', id=2, bbox3d=[1, 1, 0, 1.5, 1.5, 1.0], reference_frame='map',
-                                               rgba=[0.0, 1.0, 0.5, 0.5])
-    rv.publish_and_register(cube_marker_2)
-
+    logger.info('(add) create_sphere_marker')
+    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', 
+                                                scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    rv.publish_and_register(sphere_marker) 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

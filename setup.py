@@ -70,6 +70,7 @@ setup(
         ('share/' + PACKAGE_NAME, ['package.xml']),
         (os.path.join('share', PACKAGE_NAME, 'launch'), glob.glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
         (os.path.join('share', PACKAGE_NAME, 'config'), glob.glob(os.path.join('config', '*'))),
+        (os.path.join('share', PACKAGE_NAME, 'examples', 'assets'), glob.glob(os.path.join('examples', 'assets', '*'))),
     ],
     install_requires=INSTALL_REQUIRES,
     zip_safe=True,

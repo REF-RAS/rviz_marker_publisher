@@ -28,16 +28,16 @@ def main():
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(3.0)
     # remove existing markers
-    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
-    rv.delete_all_old_objets_of_topics()
+    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
+    rv.delete_all_objects_by_topics()
     time.sleep(2.0)  
     # add a group of markers for 'work_area'
     sphere_marker = rviz_marker.create_sphere_marker(name='work_area', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish(sphere_marker) 
+    rv.publish_and_register(sphere_marker) 
     axis_marker = rviz_marker.create_axisplane_marker(name='work_area', id=2, bbox2d=[-1, -1, 1, 1], offset=0, reference_frame='map', axes='xy', rgba=[0.2, 0.2, 1.0])
-    rv.publish(axis_marker) 
+    rv.publish_and_register(axis_marker) 
     arrow_marker = rviz_marker.create_arrow_marker(name='work_area', id=3, xyzrpy=[1, 1, 1, 0, 3.14, 0], reference_frame='map', scale=0.50, rgba=[0.0, 1.0, 0.5, 1.0])
-    rv.publish(arrow_marker)     
+    rv.publish_and_register(arrow_marker)     
 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')

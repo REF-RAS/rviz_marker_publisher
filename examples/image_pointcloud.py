@@ -32,14 +32,14 @@ def main():
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(3.0)
     # remove existing markers
-    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
-    rv.delete_all_old_objets_of_topics()
+    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
+    rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a sphere marker as a persistent marker to the RVizVisualizer
+    # add an image as a pointcloud
     logger.info('(add) create_pointcloud_from_image CoralFish.png')
     image_bgr = cv2.imread(os.path.join(os.path.dirname(__file__), '../docs/assets/CoralFish.png'))
     image_pointcloud2:PointCloud2 = rviz_marker.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], reference_frame='map')
-    rv.publish_best_effort(image_pointcloud2)
+    rv.publish_best_effort_once(image_pointcloud2)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

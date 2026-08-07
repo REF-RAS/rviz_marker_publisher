@@ -32,7 +32,7 @@ def main():
     time.sleep(3.0)
     # remove existing markers
     logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
-    rv.delete_all_old_objets_of_topics()
+    rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
     # add a custom transform called 'workspace'
     transform_pose = Pose()
@@ -44,7 +44,7 @@ def main():
     # add a sphere marker as a persistent marker to the RVizVisualizer
     logger.info('(add) create_sphere_marker in the reference frame "workspace"')
     sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[0.0, 0.0, 0.0], reference_frame='workspace', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish(sphere_marker) 
+    rv.publish_and_register(sphere_marker) 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

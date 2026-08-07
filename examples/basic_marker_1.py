@@ -28,13 +28,13 @@ def main():
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(3.0)
     # remove existing markers
-    logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
-    rv.delete_all_old_objets_of_topics()
+    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
+    rv.delete_all_objects_by_topics()
     time.sleep(2.0)   
     # add a sphere marker as a persistent marker to the RVizVisualizer
     logger.info('(add) create_sphere_marker and wait for 5 seconds')
     sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish(sphere_marker) 
+    rv.publish_and_register(sphere_marker) 
     time.sleep(5.0) 
     # delete the sphere marker
     logger.info('(delete) delete the sphere')

@@ -42,6 +42,7 @@ from visualization_msgs.msg import Marker, MarkerArray
 from rviz_marker.pose_tools import list_to_pose, pose_to_xyzq
 from rviz_marker.package_tools import PackageFile
 from rviz_marker.logging_tools import logger
+from rviz_marker.lock_tools import synchronized
 import rviz_marker.pose_tools as pose_tools
 
 class RGBAColors(int, Enum):
@@ -103,6 +104,8 @@ def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=N
         scale = [scale, scale, scale]    
     if isinstance(scale, (list, tuple)):
         the_marker.scale = Vector3(x=float(scale[0]), y=float(scale[1]), z=float(scale[2]))
+    elif isinstance(scale, Vector3):
+        the_marker.scale = scale
     else:
         the_marker.scale = Vector3(x=1.0, y=1.0, z=1.0)
     # the color
@@ -173,15 +176,15 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, referen
     if axes == 'xy':
         xyz = [(bbox2d[0] + bbox2d[2]) / 2, (bbox2d[1] + bbox2d[3]) / 2, offset]
         pose = list_to_pose(xyz + rpy)
-        scale = Vector3(x=float(scale1), y=float(scale2), z=float(plane_thickness))
+        scale = (scale1, scale2, plane_thickness)
     elif axes == 'yz':
         xyz = [offset, (bbox2d[0] + bbox2d[2]) / 2, (bbox2d[1] + bbox2d[3]) / 2]
         pose = list_to_pose(xyz + rpy)
-        scale = Vector3(x=float(plane_thickness), y=float(scale1), z=float(scale2))
+        scale = (plane_thickness, scale1, scale2)
     elif axes == 'xz':
         xyz = [(bbox2d[0] + bbox2d[2]) / 2, offset, (bbox2d[1] + bbox2d[3]) / 2]
         pose = list_to_pose(xyz + rpy)
-        scale = Vector3(x=float(scale1), y=float(plane_thickness), z=float(scale2))
+        scale = (scale1, plane_thickness, scale2)
     else:
         logger.warning(f'create_2dregion_marker: invalid plane parameter {axes}')
         return None
@@ -374,7 +377,7 @@ def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_fr
 
     the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
     try:
-        file_uri = PackageFile.resolve_to_file_or_http_uri(file_uri)
+        file_uri = PackageFile.resolve_to_valid_uri(file_uri)
     except Exception as ex:
         logger.warning(f'create_mesh_marker: Invalid model_file for object ({file_uri}): {ex}')
         return
@@ -508,8 +511,9 @@ class PublishTopicManager():
         self._node = node
         self._default_qos_profile = default_qos_profile
         self.topics_dict = defaultdict(lambda: (None, None))         # (topic name) > tuple (message class, publisher)
-        self.topics_list_of_messages = defaultdict(lambda: [])        # (message cls name) > list (topic name)
+        self.topics_of_messages = defaultdict(lambda: [])        # (message cls name) > list (topic name)
 
+    @synchronized
     def add_topic_of_message_class(self, topic:str, message_cls:type, qos_profile:QoSProfile=None) -> Publisher:
         assert isinstance(topic, str), f'TopicManager add_topic: invalid parameter type (topic) = {type(topic)}'
         assert isinstance(message_cls, type), f'TopicManager add_topic: invalid parameter type (message_cls) - requires a ros2 visualization message class'
@@ -526,18 +530,38 @@ class PublishTopicManager():
         topics_list = self.get_topics_list_of_messages(message_cls)
         topics_list.append(topic)
         message_cls_name = message_cls.__name__
-        self.topics_list_of_messages[message_cls_name] = topics_list
+        self.topics_of_messages[message_cls_name] = topics_list
         # return value
         return pub
 
+    @synchronized
+    def delete_topic(self, topic:str):
+        if topic not in self.topics_dict:
+            raise ValueError(f'invalid parameter (topic): the topic not exists')
+        message_cls, pub = self.topics_dict[topic]
+        # delete from topics_dict
+        del self.topics_dict[topic]
+        # remove the topic from the list of topics_list_of_messages
+        topics_list = self.get_topics_list_of_messages(message_cls)
+        if topic in topics_list:
+            topics_list.remove(topic)
+        # destroy the publisher
+        self._node.destroy_publisher(pub)
+
+    def topic_exists(self, topic:str) -> bool:
+        return topic in self.topics_dict
+
+    @synchronized
     def get_topics_list_of_messages(self, message_cls:type) -> list:
         message_cls_name = message_cls.__name__
-        return self.topics_list_of_messages.get(message_cls_name, [])
+        return self.topics_of_messages.get(message_cls_name, [])
 
+    @synchronized
     def get_publisher_of_topic(self, topic:str) -> Publisher:
         message_cls, pub = self.topics_dict[topic]
         return pub
 
+    @synchronized
     def get_message_cls_of_topic(self, topic:str) -> type:
         message_cls, pub = self.topics_dict[topic]
         return message_cls    
@@ -693,7 +717,7 @@ class RvizVisualizer():
             raise TypeError(f'A parameter is invalid')
         self.tf_broadcaster.sendTransform(pose_tools.pose_stamped_to_transform_stamped(pose_stamped, name))
 
-    def get_default_topic(self, the_object:Any) -> str:
+    def _get_default_topic(self, the_object:Any) -> str:
         if isinstance(the_object, Marker):
             return self.default_marker_topic
         elif isinstance(the_object, MarkerArray):
@@ -702,7 +726,14 @@ class RvizVisualizer():
             return self.default_pointcloud_topic
         return None
 
-    def publish(self, the_object:Any, topic:str=None, pub_tf:bool=False) -> None:
+    def activate_topic(self, topic:str, message_cls:type, qos_profile:QoSProfile=None):
+        qos_profile = self._default_qos_profile if qos_profile is None else qos_profile
+        self.topic_manager.add_topic_of_message_class(topic, message_cls, qos_profile)
+
+    def deactivate_topic(self, topic:str):
+        self.topic_manager.delete_topic(topic)
+
+    def publish_and_register(self, the_object:Any, topic:str=None, pub_tf:bool=False) -> Any:
         """ Publish an object to rviz and again if auto-refresh is true
 
         :param the_object: A object to be published
@@ -710,22 +741,29 @@ class RvizVisualizer():
         :param pub_tf: if True, the pose of the marker is published as a tf frame
         :return: The mrker
         """
-        assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
-        topic = self.get_default_topic(the_object) if topic is None else topic
-        self.publish_best_effort(the_object, topic, delay=0.0)
+        assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid parameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
+        topic = self._get_default_topic(the_object) if topic is None else topic
+        # raise exception if the topic not found in the topic_manager
+        if not self.topic_manager.topic_exists(topic):
+            raise ValueError(f'invalid parameter (topic): {topic} not activated')
+        # publish the object as soon as possible
+        self.publish_best_effort_once(the_object, topic, delay=0.0)
+        # create a RvizObjectModel and append to the objects_queue
         with self.object_queue_lock:
-            # (topic, object, pub_time, tf_frame, ns, id)
             if pub_tf and isinstance(the_object, Marker):
+                # create a custom_tf if pub_tf is True and the object is a Marker
                 tf_frame = f'{the_object.ns}.{the_object.id}'
                 self.publish_custom_tf(tf_frame, the_object.header.frame_id, the_object.pose)
                 self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, tf_frame=tf_frame, ns=the_object.ns, id=the_object.id))
             elif isinstance(the_object, Marker):
+                # if pub_tf is False and the object is a Marker
                 self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, ns=the_object.ns, id=the_object.id))
             else:
+                # for other object classes
                 self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic))
-        
+        return the_object
             
-    def publish_best_effort(self, the_object:Any, topic:str=None, delay:float=None, update_stamp:bool=True) -> None:
+    def publish_best_effort_once(self, the_object:Any, topic:str=None, delay:float=None, update_stamp:bool=True) -> Any:
         """ Add an once-only marker, which is to be published only once
 
         :param marker: A marker to be published only once
@@ -734,11 +772,16 @@ class RvizVisualizer():
         """
         assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
         assert delay is None or isinstance(delay, numbers.Number), 'invalid arameter (delay): must be a float (seconds) or None (now)'
-        topic = self.get_default_topic(the_object) if topic is None else topic   
+        topic = self._get_default_topic(the_object) if topic is None else topic   
+        # raise exception if the topic not found in the topic_manager
+        if not self.topic_manager.topic_exists(topic):
+            raise ValueError(f'invalid parameter (topic): {topic} not activated')
+        # create a RvizObjectModel object and append the object to the best_effort_objects_queue         
         pub_time = None if delay is None else self._get_ros_time_in_seconds() + delay
         with self.object_queue_lock:
             # self.best_effort_objects_queue.append({'object': the_object, 'topic': topic, 'pub_time': pub_time})     
             self.best_effort_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time, update_stamp=update_stamp))
+        return the_object
 
     def publish_all_objects_again(self) -> None:
         """ publish all the objects once again
@@ -764,7 +807,12 @@ class RvizVisualizer():
             raise AssertionError(f'RvizVisualizer (add_custom_tf): No parameter can be None')
         self.tfs_dict[name] = {'pose': pose, 'frame':name, 'parent_frame': parent_frame}       
         
-    def delete_object(self, the_object:Any):
+    def delete_object(self, the_object:Marker | MarkerArray | PointCloud2):
+        """ delete the object from the visualization
+
+        :param the_object: the object
+        :type the_object: Marker, MarkerArray or PointCloud2
+        """
         assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         if object_model is None:
@@ -781,30 +829,33 @@ class RvizVisualizer():
             # delete the cache
             self.objects_queue.remove(object_model)
 
+    # internal function to create delete message for marker deletion 
     def _delete_marker(self, the_object:Marker):
         assert isinstance(the_object, (Marker)), 'invalid parameter (the_object): must be a Marker'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
         the_object.action = Marker.DELETE
-        self.publish_best_effort(object_model.the_object, object_model.topic, delay=0.0)
+        self.publish_best_effort_once(object_model.the_object, object_model.topic, delay=0.0)
         # remove tf_frame if defined
         if object_model.tf_frame is not None:
             if object_model.tf_frame in self.tfs_dict:
                 del self.tfs_dict[object_model.tf_frame]
 
+    # internal function to create delete all message for marker_array deletion 
     def _delete_marker_array(self, the_object:Marker):
         assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a MarkerArray'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        self.publish_best_effort(create_delete_all_marker_array(), object_model.topic, delay=0.0)
+        self.publish_best_effort_once(create_delete_all_marker_array(), object_model.topic, delay=0.0)
 
+    # internal function to create empty pointcloud message for pointcloud deletion 
     def _delete_pointcloud(self, the_object:Marker):
         assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a PointCloud'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        self.publish_best_effort(create_empty_pointcloud(), object_model.topic, delay=0.0)        
+        self.publish_best_effort_once(create_empty_pointcloud(), object_model.topic, delay=0.0)        
             
-    def delete_objects_of_topics(self, topics_list:list=None):
+    def delete_registered_objects_by_topics(self, topics_list:list=None):
         """ delete all objects from rviz, optionally only the topics in the topics_list
 
         :param topics_list: the topics included, defaults to None (all default topics)
@@ -826,7 +877,14 @@ class RvizVisualizer():
                         self.delete_object(object_model.the_object)
                         topics_deleted_list.append(object_model.topic)
 
-    def delete_all_old_objets_of_topics(self, topics_list:list=None, frame_id:str=None):
+    def delete_all_objects_by_topics(self, topics_list:list[str]=None, frame_id:str=None):
+        """ attempt to clear old objects by sending DELETE_ALL messages to the topics
+
+        :param topics_list: the list of topics to send DELETE_ALL messages, defaults to None (the default topics)
+        :type topics_list: list[str], optional
+        :param frame_id: the frame id, defaults to the default the fixed_frame variable of this object
+        :type frame_id: str, optional
+        """
         if topics_list is None:
             topics_list = [self.default_marker_topic, self.default_marker_array_topic, self.default_pointcloud_topic]
         elif isinstance(topics_list, str):
@@ -840,26 +898,34 @@ class RvizVisualizer():
             if message_cls is None:
                 continue
             if message_cls == Marker:
-                self.publish_best_effort(create_delete_all_marker(frame_id=frame_id), topic, update_stamp=True)
+                self.publish_best_effort_once(create_delete_all_marker(frame_id=frame_id), topic, update_stamp=True)
             elif message_cls == MarkerArray:
-                self.publish_best_effort(create_delete_all_marker_array(frame_id=frame_id), topic, update_stamp=False)
+                self.publish_best_effort_once(create_delete_all_marker_array(frame_id=frame_id), topic, update_stamp=False)
             elif message_cls == PointCloud2:
-                self.publish_best_effort(create_empty_pointcloud(frame_id=frame_id), topic, update_stamp=False)
+                self.publish_best_effort_once(create_empty_pointcloud(frame_id=frame_id), topic, update_stamp=False)
 
-    def _audit_rviz_subscriptions(self):
+    def audit_rviz_subscriptions(self) -> dict[str, list] | None:
+        """ audit the rviz node and query the topic subscription
+
+        :return: a dictionary containing key value pairs of (topic name, list of message type names) or None if the query failed
+        :rtype: dict[str, list] or None
+        """
         node_list = self._node.get_node_names_and_namespaces()
+        # check if rviz2 is found
         rviz_node = None
         for name, namespace in node_list:
             if 'rviz2' in name.lower():
                 rviz_node = (name, namespace)
                 break
+        # if rviz2 node is found, query the topic subscription of the node
         if rviz_node:
             node_name, node_ns = rviz_node
             try:
                 subscriptions = self._node.get_subscriber_names_and_types_by_node(node_name, node_ns)
-                logger.info(f'subscriptions: {subscriptions}')
+                return {topic: message_names_list for topic, message_names_list in subscriptions}
             except Exception as e:
-                logger.error(f"Failed to get subscriptions: {str(e)}")
+                ...
+        return None
         
 
         
