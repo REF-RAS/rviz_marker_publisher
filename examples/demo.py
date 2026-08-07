@@ -93,7 +93,7 @@ def main():
         rv.delete_object(text_marker_1)
 
         # create marker array
-        logger.info(f'[add marker array] cubes')
+        logger.info(f'(add) create_cube_marker_from_xyzrpy')
         markers_list = []
         for x in range(4):
             for y in range(4):
@@ -105,7 +105,7 @@ def main():
         rv.publish_best_effort_once(marker_array)
         the_node.get_clock().sleep_for(Duration(seconds=5, nanoseconds=0))
         # delete all markers
-        logger.info(f'[delete all objects]')
+        logger.info(f'(delete all objects)')
         rv.delete_all_objects_by_topics()
         logger.info(f'The demo is completed')
         # pause before terminate until Enter is press

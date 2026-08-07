@@ -815,9 +815,9 @@ class RvizVisualizer():
         """
         assert isinstance(the_object, (Marker, MarkerArray, PointCloud2)), 'invalid arameter (marker): must be in (Marker, MarkerArray, PointCloud2)'
         object_model:RvizObjectModel = self._get_object_model(the_object)
-        if object_model is None:
-            logger.warning(f'(rviz_tools) delete_object: object not exists')
-            return
+        # if object_model is None:
+        #     logger.warning(f'(rviz_tools) delete_object: object not exists')
+        #     return
         with self.object_queue_lock:
             # attempt to send a delete command for the object anyway
             if isinstance(the_object, Marker):
@@ -827,33 +827,42 @@ class RvizVisualizer():
             elif isinstance(the_object, PointCloud2):
                 self._delete_pointcloud(the_object)
             # delete the cache
-            self.objects_queue.remove(object_model)
+            if object_model is not None:
+                self.objects_queue.remove(object_model)
 
     # internal function to create delete message for marker deletion 
     def _delete_marker(self, the_object:Marker):
         assert isinstance(the_object, (Marker)), 'invalid parameter (the_object): must be a Marker'
         object_model:RvizObjectModel = self._get_object_model(the_object)
-        assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
+        # set action DELETE
         the_object.action = Marker.DELETE
-        self.publish_best_effort_once(object_model.the_object, object_model.topic, delay=0.0)
+        if object_model is not None:
+            self.publish_best_effort_once(object_model.the_object, object_model.topic, delay=0.0)
+        else:
+            self.publish_best_effort_once(the_object, delay=0.0)
         # remove tf_frame if defined
-        if object_model.tf_frame is not None:
+        if object_model is not None:
             if object_model.tf_frame in self.tfs_dict:
                 del self.tfs_dict[object_model.tf_frame]
 
     # internal function to create delete all message for marker_array deletion 
-    def _delete_marker_array(self, the_object:Marker):
+    def _delete_marker_array(self, the_object:MarkerArray):
         assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a MarkerArray'
         object_model:RvizObjectModel = self._get_object_model(the_object)
-        assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        self.publish_best_effort_once(create_delete_all_marker_array(), object_model.topic, delay=0.0)
+        if object_model is not None:
+            self.publish_best_effort_once(create_delete_all_marker_array(), object_model.topic, delay=0.0)
+        else:
+            if the_object.markers is not None and len(the_object.markers) > 0:
+                self.publish_best_effort_once(create_delete_all_marker_array(), delay=0.0)
 
     # internal function to create empty pointcloud message for pointcloud deletion 
-    def _delete_pointcloud(self, the_object:Marker):
-        assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a PointCloud'
+    def _delete_pointcloud(self, the_object:PointCloud2):
+        assert isinstance(the_object, (PointCloud2)), 'invalid arameter (the_object): must be a PointCloud'
         object_model:RvizObjectModel = self._get_object_model(the_object)
-        assert object_model is not None, 'invalid parameter value (the_object):the object not found in the objects queue'
-        self.publish_best_effort_once(create_empty_pointcloud(), object_model.topic, delay=0.0)        
+        if object_model is not None:
+            self.publish_best_effort_once(create_empty_pointcloud(), object_model.topic, delay=0.0)   
+        else:
+            self.publish_best_effort_once(create_empty_pointcloud(), delay=0.0)     
             
     def delete_registered_objects_by_topics(self, topics_list:list=None):
         """ delete all objects from rviz, optionally only the topics in the topics_list
