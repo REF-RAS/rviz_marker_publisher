@@ -18,6 +18,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
+from ament_index_python import get_packages_with_prefixes, get_package_share_directory
+
 import rviz_marker
 from rviz_marker import RvizVisualizer, get_logger
 logger = get_logger()
@@ -36,8 +38,9 @@ def main():
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
     # add an image as a pointcloud
-    logger.info('(add) create_pointcloud_from_image CoralFish.png')
-    image_bgr = cv2.imread(os.path.join(os.path.dirname(__file__), '../docs/assets/CoralFish.png'))
+    logger.info(f'(add) create_pointcloud_from_image CoralFish.png')
+    image_file = os.path.join(get_package_share_directory('rviz_marker_tools_ros2'), 'examples/assets/CoralFish.png')
+    image_bgr = cv2.imread(image_file)
     image_pointcloud2:PointCloud2 = rviz_marker.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
     rv.publish(image_pointcloud2)
     # pause before terminate until Enter is press

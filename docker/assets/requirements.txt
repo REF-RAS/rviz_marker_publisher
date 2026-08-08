@@ -1,3 +1,13 @@
-# common python 
+# common utilities packages 
+pyyaml
+typeguard
+wrapt
+
+# ros2 python packages
+transforms3d
+
+# common python packages 
 opencv_contrib_python>=5
+pandas
+numpy
 

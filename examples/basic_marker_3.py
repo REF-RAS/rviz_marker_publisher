@@ -41,7 +41,7 @@ def main():
     logger.info('waiting for 2 seconds')
     time.sleep(2.0)
     # remove existing markers
-    rv.delete_registered_objects_by_topics()   
+    rv.delete_cached_objects_by_topics()   
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

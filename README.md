@@ -6,7 +6,7 @@
 ![QUT REF Collection](https://badgen.net/badge/collections/QUT%20REF-RAS?icon=github) 
 ![ROS2 Package Category](https://badgen.net/badge/category/ROS1%20Package/purple?icon=github)
 ![Visualization Topic](https://badgen.net/badge/topic/Visualization/orange?icon=github)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: BSD NON-AI](https://badgen.net/badge/license/BSD-3%20NON-AI?icon=github)](https://github.com/non-ai-licenses/non-ai-licenses/blob/main/NON-AI-BSD3)
 
 [![Docker Compose Build and Deploy](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/docker-build.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/docker-build.yml)
 [![Build Sphinx and Deploy](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/sphinx.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/sphinx.yml)

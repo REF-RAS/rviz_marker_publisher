@@ -34,7 +34,7 @@ from rclpy.publisher import Publisher
 from std_msgs.msg import Header
 from tf2_msgs.msg import TFMessage
 from std_msgs.msg import ColorRGBA, Header
-from geometry_msgs.msg import Pose, PoseStamped, Twist, TwistStamped, Vector3, Point, Quaternion
+from geometry_msgs.msg import Pose, PoseStamped, TransformStamped, Vector3, Point, Quaternion
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
@@ -242,7 +242,7 @@ def create_arrow_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=
     """
     pose = list_to_pose(xyzrpy)
     if isinstance(scale, numbers.Number):
-        scale = [scale, scale/10, scale/25]
+        scale = [scale, scale/5.0, scale/15.0]
     the_marker = _create_marker(name, id, Marker.ARROW, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)    
     return the_marker
 
@@ -645,16 +645,28 @@ class PublishTopicManager():
 @dataclass
 class RvizObjectModel():
     """ A helper dataclass for the management of object messages in RvizVisualizer
-
         :meta private:
     """
     the_object: Any
     topic: str
     pub_time: float = None
     update_stamp: float = True
-    tf_frame: str = None
+    tf_frame_id: str = None         # the name of the transform, which is a string formed from nd and id
     ns: str = None
     id: int = None
+
+# A helper dataclass for the management of custom TF in RvizVisualizer
+@dataclass
+class RvizCustomTFModel():
+    """ A helper dataclass for the management of custom TF in RvizVisualizer
+        :meta private:
+    """
+    frame_id: str                           # the frame id of the name of the custom TF 
+    parent_frame_id: str                    # the parent frame id
+    pose: Pose                              # the pose
+    static_tf: bool = False                 # this TF is static and will be published to /static_tf once
+    pose_linked_marker: bool = False        # the pose is linked to a Marker and therefore updated through the Marker
+    linked_marker: Marker = None            # the linked marker 
 
 class RvizVisualizer():
     """ A publisher of markers, which handles persistent markers, which is published repeatedly and temporary markers,
@@ -723,8 +735,9 @@ class RvizVisualizer():
 
         self.to_delete_all_pointclouds = False                  # a flag to notify the pointcloud callback to clear all 
         # setup tf publish
-        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self._node)
-        self.tfs_dict = defaultdict(lambda: None)               # frame_name -> dict
+        self.tf_broadcaster = tf2_ros.TransformBroadcaster(self._node)                # default QosProfile is VOLATILE,, KEEP_LAST and the queue length is 100
+        self.static_tf_broadcaster = tf2_ros.StaticTransformBroadcaster(self._node)   # default QosProfile is TRANSIENT_LOCAL, KEEP LAST and the queue length is 1
+        self.tfs_dict = defaultdict(lambda: None)                                     # frame_name -> dict
      
         # setup timers
         self.timer_tf = self._node.create_timer(self.tf_refresh_timer_cycle, self._cb_timer_tf, callback_group=self.callback_group)
@@ -798,36 +811,46 @@ class RvizVisualizer():
         :meta private:
         """
         with self.object_queue_lock:   
+            custom_tf: RvizCustomTFModel
             for custom_tf in self.tfs_dict.values():
-                name, parent_frame, pose = custom_tf['frame'], custom_tf['parent_frame'], custom_tf['pose']  
-                self._pub_transform(name, pose, parent_frame)  
+                # the pose may be coming from a Marker object if this is linked to the Marker
+                transform_stamp:TransformStamped = self._pub_transform(custom_tf.frame_id, custom_tf.pose, custom_tf.parent_frame_id, custom_tf.static_tf)  
+                if custom_tf.static_tf:
+                    del self.tfs_dict[custom_tf.frame_id]
+
 
     # internal function: publish the transform of a specific named object
-    def _pub_transform(self, name:str, pose, frame=None):
+    def _pub_transform(self, frame_id:str, pose:Pose, parent_frame_id:str=None, static_tf:bool=False) -> TransformStamped:
         """ internal function to publish the transform of an object
         :meta private:
-        :param name: name of the object
-        :type name: str
+        :param frame_id: frame name of the transform
+        :type frame_id: str
         :param pose: the pose of the object 
         :type pose: Pose, PoseStamped, list of 6 or 7
-        :param frame: the frame against which the pose is defined, ignored if PoseStamped is provided, defaults to None
-        :type frame: str, optional
+        :param parent_frame_id: the parent frame from which the pose is defined, ignored if PoseStamped is provided, defaults to None
+        :type parent_frame_id: str, optional
         """
-        frame = self.base_frame if frame is None else frame
+        parent_frame_id = self.base_frame if parent_frame_id is None else parent_frame_id
         if type(pose) in [list, tuple]:
-            pose_stamped = pose_tools.list_to_pose_stamped(pose, frame)
+            pose_stamped = pose_tools.list_to_pose_stamped(pose, parent_frame_id)
         elif type(pose) == Pose:
             pose_stamped = PoseStamped()
-            pose_stamped.header.frame_id = frame
+            pose_stamped.header.frame_id = parent_frame_id
             pose_stamped.header.stamp = self._node.get_clock().now().to_msg()
             pose_stamped.pose = pose
         elif type(pose) == PoseStamped:
-            frame = pose.header.frame_id
+            parent_frame_id = pose.header.frame_id
             pose_stamped = pose
         else:
             logger.logerr(f'{__class__.__name__}: parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
             raise TypeError(f'A parameter is invalid')
-        self.tf_broadcaster.sendTransform(pose_tools.pose_stamped_to_transform_stamped(pose_stamped, name))
+        # create the TransformStamped
+        transform_stamp:TransformStamped = pose_tools.pose_stamped_to_transform_stamped(pose_stamped, frame_id)
+        if static_tf:
+            self.static_tf_broadcaster.sendTransform(transform_stamp)
+        else:
+            self.tf_broadcaster.sendTransform(transform_stamp)
+        return transform_stamp
 
     # internal function to return the default topic suitable for publishing the object in the parameter
     def _get_default_topic(self, the_object:Any) -> str:
@@ -842,15 +865,29 @@ class RvizVisualizer():
             return self.default_pointcloud_topic
         return None
 
-    def activate_topic(self, topic:str, message_cls:type, qos_profile:QoSProfile=None):
+    def activate_topic(self, topic:str, message_cls:type, qos_profile:QoSProfile=None) -> None:
+        """ Activate a topic by creating a publisher to associated with the given message class on the given topic
+
+        :param topic: the new topic
+        :type topic: str
+        :param message_cls: the message class associated with the publisher
+        :type message_cls: type
+        :param qos_profile: the QoSProfile of the publisher, defaults to None (the default QoSProfile)
+        :type qos_profile: QoSProfile, optional
+        """
         qos_profile = self._default_qos_profile if qos_profile is None else qos_profile
         self.topic_manager.add_topic_of_message_class(topic, message_cls, qos_profile)
 
-    def deactivate_topic(self, topic:str):
+    def deactivate_topic(self, topic:str) -> None:
+        """ Deactivate the topic and destroy the associated publisher
+
+        :param topic: the topic to be deactivated
+        :type topic: str
+        """
         self.topic_manager.delete_topic(topic)
 
     def publish_and_cache(self, the_object:Marker|MarkerArray|PointCloud2, topic:str=None, pub_tf:bool=False, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
-        """ Publish an object to rviz and again if auto-refresh is true
+        """ Publish an object to rviz and again if auto-refresh is True
 
         :param the_object: A object to be published
         :param topic: the topic to publish to
@@ -868,9 +905,9 @@ class RvizVisualizer():
         with self.object_queue_lock:
             if pub_tf and isinstance(the_object, Marker):
                 # create a custom_tf if pub_tf is True and the object is a Marker
-                tf_frame = f'{the_object.ns}.{the_object.id}'
-                self.publish_custom_tf(tf_frame, the_object.header.frame_id, the_object.pose)
-                self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, tf_frame=tf_frame, ns=the_object.ns, id=the_object.id, update_stamp=update_stamp))
+                tf_frame_id = f'{the_object.ns}.{the_object.id}'
+                self.publish_custom_tf(tf_frame_id, the_object.header.frame_id, the_object.pose, static_tf=False, linked_marker=the_object)
+                self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, tf_frame_id=tf_frame_id, ns=the_object.ns, id=the_object.id, update_stamp=update_stamp))
             elif isinstance(the_object, Marker):
                 # if pub_tf is False and the object is a Marker
                 self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, ns=the_object.ns, id=the_object.id, update_stamp=update_stamp))
@@ -899,8 +936,8 @@ class RvizVisualizer():
             self.outbox_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time, update_stamp=update_stamp))
         return the_object
 
-    def publish_all_objects_again(self) -> None:
-        """ publish all the objects once again
+    def publish_cached_objects_now(self) -> None:
+        """ publish the cached objects once now
         
         """
         def execute_once():
@@ -911,17 +948,23 @@ class RvizVisualizer():
 
         one_shot_timer = self._node.create_timer(0.0, execute_once)
         
-    def publish_custom_tf(self, name:str, parent_frame:str, pose:Pose) -> None:
+    def publish_custom_tf(self, frame_id:str, parent_frame_id:str, pose:Pose, static_tf:bool=False, linked_marker:Marker=None) -> None:
         """ Add a custom transform to the rviz visualizer, which is broadcast regularly
 
-        :param name: the name of the transform
-        :param xyz: the xyz pose
-        :param rpy: the rpy pose
-        :param frame: the reference frame
+        :param frame_id: the name of the transform
+        :param pose: the pose of the transform, which may be coming from the Pose of the Marker object
+        :param parent_frame: the parent frame
+        :param static_tf: publish this transform to static_tf once  
+        :param static_tf: this transform is linked to a Marker and so the pose is shared
         """
-        if name is None or parent_frame is None or pose is None:
+        if frame_id is None or parent_frame_id is None or pose is None:
             raise AssertionError(f'RvizVisualizer (add_custom_tf): No parameter can be None')
-        self.tfs_dict[name] = {'pose': pose, 'frame':name, 'parent_frame': parent_frame}       
+        # if linked_marker is given, then the pose of the Marker is used instead of the input parameter
+        if isinstance(linked_marker, Marker):    
+            self.tfs_dict[frame_id] = RvizCustomTFModel(static_tf=static_tf, frame_id=frame_id, parent_frame_id=parent_frame_id, pose=linked_marker.pose, 
+                                                        linked_marker=linked_marker, pose_linked_marker=True)
+        else:
+            self.tfs_dict[frame_id] = RvizCustomTFModel(static_tf=static_tf, frame_id=frame_id, parent_frame_id=parent_frame_id, pose=pose, pose_linked_marker=False)
         
     def delete_object(self, the_object:Marker | MarkerArray | PointCloud2):
         """ delete the object from the visualization
@@ -958,8 +1001,8 @@ class RvizVisualizer():
             self.publish(the_object, delay=0.0)
         # remove tf_frame if defined
         if object_model is not None:
-            if object_model.tf_frame in self.tfs_dict:
-                del self.tfs_dict[object_model.tf_frame]
+            if object_model.tf_frame_id in self.tfs_dict:
+                del self.tfs_dict[object_model.tf_frame_id]
 
     # internal function to create delete all message for marker_array deletion 
     def _delete_marker_array(self, the_object:MarkerArray):
@@ -980,7 +1023,7 @@ class RvizVisualizer():
         else:
             self.publish(create_empty_pointcloud(), delay=0.0)     
             
-    def delete_registered_objects_by_topics(self, topics_list:list=None):
+    def delete_cached_objects_by_topics(self, topics_list:list=None):
         """ delete all objects from rviz, optionally only the topics in the topics_list
 
         :param topics_list: the topics included, defaults to None (all default topics)
@@ -991,16 +1034,13 @@ class RvizVisualizer():
         elif isinstance(topics_list, str):
             topics_list = [topics_list]
         assert isinstance(topics_list, (list, tuple)), 'invalid parameter type (topics_list): must be a str, a list of str, or None'
-        # topics deleted are not deleted again
-        topics_deleted_list = []
         # iterate through the objects_queue
         object_model: RvizObjectModel
         with self.object_queue_lock:
             for object_model in list(self.cached_objects_queue):
+                # delete the object if its topic is in the given topic_list
                 if object_model.topic in topics_list:
-                    if object_model.topic not in topics_deleted_list:
-                        self.delete_object(object_model.the_object)
-                        topics_deleted_list.append(object_model.topic)
+                    self.delete_object(object_model.the_object)
 
     def delete_all_objects_by_topics(self, topics_list:list[str]=None, frame_id:str=None):
         """ attempt to clear old objects by sending DELETE_ALL messages to the topics

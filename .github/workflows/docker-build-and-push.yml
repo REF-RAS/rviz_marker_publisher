@@ -38,11 +38,11 @@ jobs:
 
       # compile the Docker images
       - name: Build Docker Compose Images
-        run: docker compose build moveit2
+        run: docker compose build moveit2 ros2 
 
       # spin up the containers to ensure they start up successfully
       - name: Test Start Containers
-        run: docker compose up moveit2 -d --wait
+        run: docker compose up moveit2 ros2 -d --wait
 
       # check container statuses and ensure none have exited with errors
       - name: Verify Container Statuses
@@ -71,7 +71,7 @@ jobs:
       # push using the image name defined in docker-compose.yml, only runs when code is merged to main
       - name: Push image with Docker Compose to GHCR
         if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
-        run: docker compose push moveit2
+        run: docker compose push moveit2 ros2
 
   cleanup-old-images:
     needs: build-and-push

@@ -73,7 +73,7 @@ def main():
     time.sleep(10.0)
     # delete the objects from the new topics
     logger.info('(delete) delete_objects_of_topics "/rviz_marker" and "/rviz_marker_array"')
-    rv.delete_registered_objects_by_topics(['/rviz_marker', '/rviz_marker_array'])
+    rv.delete_cached_objects_by_topics(['/rviz_marker', '/rviz_marker_array'])
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()
