@@ -37,9 +37,9 @@ def main():
     time.sleep(2.0) 
     # add a cylinder marker
     logger.info('(add) create_cylinder_marker')
-    cylinder_marker = rviz_marker.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], reference_frame='map',
+    cylinder_marker = rviz_marker.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map',
                                                 scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])
-    rv.publish_and_register(cylinder_marker)
+    rv.publish_and_cache(cylinder_marker)
 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')

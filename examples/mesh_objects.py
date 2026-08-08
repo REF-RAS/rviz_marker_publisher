@@ -42,8 +42,8 @@ def main():
     teapot_mesh = 'package://rviz_marker_tools_ros2/examples/assets/utah_teapot.stl' 
     logger.info(f'(add) create_mesh_marker from mesh file location {teapot_mesh}')
     mesh_marker = rviz_marker.create_mesh_marker(name='teapot', id=1, file_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
-                                     reference_frame='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
-    rv.publish_best_effort_once(mesh_marker) 
+                                     frame_id='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
+    rv.publish(mesh_marker) 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

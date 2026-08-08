@@ -35,7 +35,7 @@ def main():
     # add line markers as a temporary marker to the RVizVisualizer with a different lifetime
     logger.info('(add) create_line_marker with lifetime of 5 seconds 10 times (ensure the rviz Marker topic has depth >= 10)')    
     for i in range(10):
-        rv.publish_best_effort_once(rviz_marker.create_line_marker(name='line', id=i, xyz1=[-2.5 + i * 0.5, 0, 0], xyz2=[-2.5 + i * 0.5, 1, 0], reference_frame='map',
+        rv.publish(rviz_marker.create_line_marker(name='line', id=i, xyz1=[-2.5 + i * 0.5, 0, 0], xyz2=[-2.5 + i * 0.5, 1, 0], frame_id='map',
                                                     line_width=0.05, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=Duration(seconds=5))) 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')

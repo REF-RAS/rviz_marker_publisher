@@ -37,9 +37,9 @@ def main():
     time.sleep(2.0) 
     # add a path marker
     logger.info('(add) create_path_marker')
-    path_marker = rviz_marker.create_path_marker(name='path', id=1, xyzlist=[(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (1, 0, 0)], reference_frame='map',
+    path_marker = rviz_marker.create_path_marker(name='path', id=1, xyzlist=[(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (1, 0, 0)], frame_id='map',
                                                 line_width=0.05, rgba=[1.0, 0.5, 0.5, 0.5])
-    rv.publish_and_register(path_marker)
+    rv.publish_and_cache(path_marker)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

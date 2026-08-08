@@ -38,16 +38,16 @@ def main():
     # add a axis plane marker on xy plane as a marker to the RVizVisualizer
     logger.info('(add) create_axisplane_markers 3 times')
     axis_plane_marker_xy = rviz_marker.create_axisplane_marker(name='axisplane', id=1, bbox2d=[-1, -1, 1, 1], offset=2, 
-                                                               reference_frame='map', axes='xy', rgba=[1, 0, 0])
-    rv.publish_and_register(axis_plane_marker_xy)
+                                                               frame_id='map', axes='xy', rgba=[1, 0, 0])
+    rv.publish_and_cache(axis_plane_marker_xy)
     # add a axis plane marker on xy plane as a marker to the RVizVisualizer
     axis_plane_marker_xz = rviz_marker.create_axisplane_marker(name='axisplane', id=2, bbox2d=[-1, -1, 1, 1], offset=2, 
-                                                               reference_frame='map', axes='xz', rgba=[0, 1, 0])
-    rv.publish_and_register(axis_plane_marker_xz)
+                                                               frame_id='map', axes='xz', rgba=[0, 1, 0])
+    rv.publish_and_cache(axis_plane_marker_xz)
     # add a axis plane marker on yz plane as a marker to the RVizVisualizer
     axis_plane_marker_xz = rviz_marker.create_axisplane_marker(name='axisplane', id=3, bbox2d=[-1, -1, 1, 1], offset=2, 
-                                                               reference_frame='map', axes='yz', rgba=[0, 0, 1])
-    rv.publish_and_register(axis_plane_marker_xz)     
+                                                               frame_id='map', axes='yz', rgba=[0, 0, 1])
+    rv.publish_and_cache(axis_plane_marker_xz)     
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

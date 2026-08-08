@@ -33,8 +33,8 @@ def main():
     time.sleep(2.0) 
     # add a sphere marker as a persistent marker to the RVizVisualizer
     logger.info('(add) create_sphere_marker and wait for 5 seconds')
-    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], reference_frame='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish_best_effort_once(sphere_marker) 
+    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    rv.publish(sphere_marker) 
 
     # change the pose of the sphere marker in a loop for a basic animation
     logger.info('(animation) move the sphere between x = (0.0, 3.0)')
@@ -43,7 +43,7 @@ def main():
         pose = sphere_marker.pose
         dx = -dx if pose.position.x < 0.0 or pose.position.x > 3.0 else dx
         rviz_marker.move_marker_xyz(sphere_marker, [dx, 0.0, 0.0])
-        rv.publish_best_effort_once(sphere_marker)
+        rv.publish(sphere_marker)
         time.sleep(0.1)
 
     # pause before terminate until Enter is press

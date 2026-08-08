@@ -28,7 +28,7 @@ from rclpy.task import Future
 from rclpy.time import Time
 from rclpy.duration import Duration
 from rclpy import logging
-from rclpy.callback_groups import ReentrantCallbackGroup
+from rclpy.callback_groups import CallbackGroup, ReentrantCallbackGroup
 from rclpy.qos import  QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
 from rclpy.publisher import Publisher
 from std_msgs.msg import Header
@@ -48,6 +48,7 @@ import rviz_marker.pose_tools as pose_tools
 class RGBAColors(int, Enum):
     """ Define common use colours for visualization
 
+    :meta private:
     """
     RED = 0, (1.0, 0.0, 0.0, 0.5)
     BLUE = 1, (0.0, 0.0, 1.0, 0.5)
@@ -63,23 +64,24 @@ class RGBAColors(int, Enum):
         if type(rgba) in (list, tuple) and len(rgba) == 3:
             rgba.append(1.0)
         return rgba
-    
-def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=None, lifetime=None, 
+
+# internal function to create a marker based on a template
+def _create_marker(name:str, id:int, marker_type:int=None, frame_id:str=None, lifetime=None, 
                         pose=None, scale:list=None, color:list=None) -> Marker:
-    """ Create a Marker object
+    """ create a Marker object based on a template
     :meta private:
-    :param name: the name space of the marker
-    :param id: the id of the marker
-    :param reference_frame: the reference frame, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param name: the name space of the marker, str type
+    :param id: the id of the marker, int type
+    :param frame_id: the reference frame, str type, defaults to None (the default fixed_frame)
+    :param lifetime: the duration (seconds as a float) that the marker is displayed, defaults to None
     :param pose: the pose of type geometry_msgs.msg.Pose or a list of xyzrpy that is acceptable by list_to_pose of pose_tools
-    :param scale: a floating point number of a 3-tuple of floating point indicating the scale
+    :param scale: a float or a 3-tuple of floating point indicating the scale of the three dimensions of the marker
     :param color: a 4-tuple of rgba or 3-tuple of rgb  
     :return: Marker
     """
     the_marker = Marker()
-    if reference_frame is not None:
-        the_marker.header.frame_id = reference_frame
+    if frame_id is not None:
+        the_marker.header.frame_id = frame_id
     # the_marker.header.stamp = Time().to_msg()               # to be populated by the publisher
     the_marker.action = Marker.ADD
     if name is not None:
@@ -87,7 +89,7 @@ def _create_marker(name:str, id:int, marker_type:int=None, reference_frame:str=N
         the_marker.id = id
     # the lifetime
     lifetime = Duration(seconds=0) if lifetime is None else lifetime
-    if type(lifetime) in (float, int):
+    if isinstance(lifetime, numbers.Number):
         lifetime_ns = int(lifetime * 1e9)
         lifetime = Duration(nanoseconds=lifetime_ns)
     the_marker.lifetime = lifetime.to_msg()
@@ -118,7 +120,7 @@ def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
 
     :param name: the name space of the marker
     :param id: the id of the marker
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :return: the Marker object for deleting a marker
     """
     the_marker = _create_marker(name, id)
@@ -130,7 +132,7 @@ def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
 def create_delete_all_marker(frame_id:str=None) -> Marker:
     """ Returns a Marker object specified to delete all markers
 
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :return: the Marker object for deleting all markers
     """
     the_marker = Marker()
@@ -142,7 +144,7 @@ def create_delete_all_marker(frame_id:str=None) -> Marker:
 def create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
     """ Returns a Marker object specified to delete all markers
 
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :return: the Marker object for deleting all markers
     """
     the_marker_array = MarkerArray()
@@ -153,19 +155,19 @@ def create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
     the_marker_array.markers.append(the_marker) 
     return the_marker_array   
 
-def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, reference_frame:str, axes:str='xy', plane_thickness=0.005, 
-                             rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
+                             rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a 2D region as a plane
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param bbox2d: a bounding box as a list [min_x, min_y, max_x, max_y]
     :param offset: the z value where the plane is display
-    :param reference_frame: the reference frame, defaults to None
+    :param referencframe_ide_frame: the reference frame, defaults to None (the default fixed_frame)
     :param axes: a string representing the axes where the bounding box lies, defaults to 'xy'
     :param plane_thickness: the thickness of the plane to be displayed, defaults to 0.005
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     rpy = [0, 0, 0]
@@ -188,98 +190,98 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, referen
     else:
         logger.warning(f'create_2dregion_marker: invalid plane parameter {axes}')
         return None
-    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame, lifetime,
+    the_marker = _create_marker(name, id, Marker.CUBE, frame_id, lifetime,
                                 pose=pose, scale=scale, color=rgba)
     return the_marker
 
-def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, reference_frame:str, rgba:list=None, lifetime=rclpy.duration.Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a 3D region as a box
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param bbox3d: a bounding box as a list [min_x, min_y, min_z, max_x, max_y, max_z]
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     rpy = [0, 0, 0]
     xyz = [(bbox3d[0] + bbox3d[3]) / 2, (bbox3d[1] + bbox3d[4]) / 2, (bbox3d[2] + bbox3d[5]) / 2]
     pose = list_to_pose(xyz + rpy)
     scale = Vector3(x=float(bbox3d[3] - bbox3d[0]), y=float(bbox3d[4] - bbox3d[1]), z=float(bbox3d[5] - bbox3d[2]))
-    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame=reference_frame, lifetime=lifetime,
+    the_marker = _create_marker(name, id, Marker.CUBE, frame_id=frame_id, lifetime=lifetime,
                                 pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a 3D region as a box
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param bbox3d: a bounding box as a list [min_x, min_y, min_z, max_x, max_y, max_z]
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
-    the_marker = _create_marker(name, id, Marker.CUBE, reference_frame, lifetime, pose=pose, scale=scale, color=rgba) 
+    the_marker = _create_marker(name, id, Marker.CUBE, frame_id, lifetime, pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_arrow_marker(name:str, id:int, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_arrow_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying an arrow
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyzrpy: the pose of the arrow as a list of 6
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the thickness of the arrow, defaults to 0.5
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
     if isinstance(scale, numbers.Number):
         scale = [scale, scale/10, scale/25]
-    the_marker = _create_marker(name, id, Marker.ARROW, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)    
+    the_marker = _create_marker(name, id, Marker.ARROW, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)    
     return the_marker
 
-def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a line
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyz1: the first point of the line
     :param xyz2: the second point of the line
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param line_width: the width of the line, defaults to 0.01
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
     scale = [float(line_width), 1.0, 1.0]
-    the_marker = _create_marker(name, id, Marker.LINE_STRIP, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
+    the_marker = _create_marker(name, id, Marker.LINE_STRIP, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     the_marker.points[:] = [Point(x=float(xyz1[0]), y=float(xyz1[1]), z=float(xyz1[2])), Point(x=float(xyz2[0]), y=float(xyz2[1]), z=float(xyz2[2]))]
     return the_marker    
 
-def create_path_marker(name:str, id:int, xyzlist:list, reference_frame:str, line_width:float=0.01, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a path of multiple waypoints
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyzlist: a list of points (xyz, Pose or PoseStamped) defining the path
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param line_width: the width of the line, defaults to 0.01
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
 
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
     scale = [float(line_width), 1.0, 1.0]
     rgba = RGBAColors.RED.rgba if rgba is None else rgba
-    the_marker = _create_marker(name, id, Marker.LINE_LIST, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
+    the_marker = _create_marker(name, id, Marker.LINE_LIST, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
     # process the points
     the_marker.points[:] = []
     the_marker.colors[:] = []
@@ -303,71 +305,71 @@ def create_path_marker(name:str, id:int, xyzlist:list, reference_frame:str, line
 
     return the_marker
 
-def create_sphere_marker(name:str, id:int, xyz:list, reference_frame:str, scale=0.2, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_sphere_marker(name:str, id:int, xyz:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a sphere
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyz: the position of the sphere
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale of the sphere as a list of 3 scales or a number, defaults to 0.2
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     rpy = [0, 0, 0]
     pose = list_to_pose(xyz + rpy) 
-    the_marker = _create_marker(name, id, Marker.SPHERE, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
+    the_marker = _create_marker(name, id, Marker.SPHERE, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
     return the_marker
 
-def create_cylinder_marker(name:str, id:int, xyzrpy:list, reference_frame:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a cylinder
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyzrpy: the pose of the cylinder
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale of the cylinder as a list of 3 numbers representing radius in x and y direction and the height
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy) 
     if type(scale) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in scale]):
         logger.warning(f'create_cylinder_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
-    the_marker = _create_marker(name, id, Marker.CYLINDER, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
+    the_marker = _create_marker(name, id, Marker.CYLINDER, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     return the_marker 
 
-def create_text_marker(name:str, id:int, text:str, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a text
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param text: a string to be displayed
     :param xyzrpy: the pose of the text as a list of 6
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the size of the text, defaults to 0.5
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
-    the_marker = _create_marker(name, id, Marker.TEXT_VIEW_FACING, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
+    the_marker = _create_marker(name, id, Marker.TEXT_VIEW_FACING, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
     the_marker.text = text
     return the_marker
 
-def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_frame:str, scale:list=0.5, rgba:list=None, lifetime=Duration(seconds=0, nanoseconds=0)) -> Marker:
+def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a mesh object
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param file_uri: the full path to the file containing a binary STL or DAE file or using protocols such as file://, package://, or http://
     :param xyzrpy: the pose of the text as a list of 6
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale factor of the mesh object, defaults to [1, 1, 1]
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to rclpy.duration.Duration(seconds=0, nanoseconds=0)
+    :param lifetime: the duration that the marker is displayed, defaults to defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
@@ -375,7 +377,7 @@ def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, reference_fr
         logger.warning(f'create_mesh_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
 
-    the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, reference_frame=reference_frame, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
+    the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
     try:
         file_uri = PackageFile.resolve_to_valid_uri(file_uri)
     except Exception as ex:
@@ -400,13 +402,13 @@ def create_marker_array(markers_list:list[Marker]) -> MarkerArray:
                 marker_array.markers.append(marker)
     return marker_array
 
-def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, reference_frame=None, opacity=255, depth_array:np.ndarray=None) -> PointCloud2:
+def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id=None, opacity=255, depth_array:np.ndarray=None) -> PointCloud2:
     """ Create a PointCloud2 for displaying a OpenCV image (color or greyscale) 
 
     :param image_bgr: the image to be displayed, type numpy ndarray
     :param xyz: the position of the bottom left hand corner of the image, defaults to (0, 0, 0)
     :param pixel_physical_size: the length of each pixel in x, y, defaults to [0.005, 0.005], and optionally the third value in the list for z scaling factor
-    :param reference_frame: the reference frame, defaults to None
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param opacity: the opacity of the displayed image, defaults to 255
     :param depth_array: optionally a numpy ndarray of exact the same shape as the image indicating the depth, defaults to None
     :return: the PointCloud2 object
@@ -464,9 +466,16 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
         cloud_data['rgb'] = np.array((opacity << 24) | (r << 16) | (g << 8) | (b << 0), dtype=np.uint32) 
     # create a PointCloud2 message using the data
     cloud_point_list = cloud_data.tolist()
-    return point_cloud2.create_cloud(Header(frame_id = reference_frame), fields, cloud_point_list)
+    return point_cloud2.create_cloud(Header(frame_id = frame_id), fields, cloud_point_list)
 
-def create_empty_pointcloud(frame_id:str=None):
+def create_empty_pointcloud(frame_id:str=None) -> PointCloud2:
+    """ Create an empty pointcloud, which may be populated with data or used as a message to clear the existing pointcloud
+
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
+    :type frame_id: str, optional
+    :return: An empty pointcloud
+    :rtype: PointCloud2
+    """
     fields = [
         PointField(name='x', offset=0, datatype=PointField.FLOAT32, count=1),
         PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
@@ -474,7 +483,14 @@ def create_empty_pointcloud(frame_id:str=None):
     ]
     return point_cloud2.create_cloud(Header(frame_id=frame_id), fields, [])
 
-def update_marker_xyzrpy(marker:Marker, xyzrpy:list):
+def update_marker_xyzrpy(marker:Marker, xyzrpy:list) -> None:
+    """ Update the pose of a marker by a xyyrpy list
+
+    :param marker: the Marker object of which the pose is to be udpated
+    :type marker: Marker
+    :param xyzrpy: the new Marker object pose in a 6-tuple xyzrpy format, each value can be a float or None (which retains the existing value)  
+    :type xyzrpy: list
+    """
     assert isinstance(xyzrpy, (list, tuple)) and len(xyzrpy) == 6, f'invalid parameter (xyzrpy): expects a list of 6 numbers'
     pose_xyzrpy = pose_tools.pose_to_xyzrpy(marker.pose)
     for index in range(len(xyzrpy)):
@@ -482,7 +498,14 @@ def update_marker_xyzrpy(marker:Marker, xyzrpy:list):
             xyzrpy[index] = pose_xyzrpy[index]
     marker.pose = list_to_pose(xyzrpy) 
 
-def move_marker_xyz(marker:Marker, xyz_offset:list):
+def move_marker_xyz(marker:Marker, xyz_offset:list) -> None:
+    """ Update the position of a marker by the given position offset as a 3-tuple [dx, dy, dz]
+
+    :param marker: the Marker object of which the pose is to be udpated
+    :type marker: Marker
+    :param xyz_offset: the displacement to be applied to the Marker object in a 3-tuple [dx, dy, dz] format
+    :type xyz_offset: list
+    """
     assert isinstance(xyz_offset, (list, tuple)) and len(xyz_offset) == 3, f'invalid parameter (xyz_offset): expects a list of 3 numbers'
     for index in range(len(xyz_offset)):
         if xyz_offset[index] is None:
@@ -494,7 +517,7 @@ def move_marker_xyz(marker:Marker, xyz_offset:list):
 # helper function for testing
 # call to spin this node 
 def spin_in_thread(node:Node) -> None:
-    """ create a threaded executor and spin it in a thread 
+    """ create a threaded executor and spin it in a thread. Designed for the demo examples.
 
     """
     executor = rclpy.executors.MultiThreadedExecutor(2)
@@ -503,11 +526,15 @@ def spin_in_thread(node:Node) -> None:
     executor_thread.start()
 
 # --------------------------------------------
-# Models a publisher of markers
+# An internal class manages topics and publishers for the markers in RvizVisualizer
 class PublishTopicManager():
-    """ Manage the topics of Marker, MarkerArray and PointCloud2 and the publishers
+    """ Manage the topics of Marker, MarkerArray and PointCloud2 and the publishers for RvizVisualizer
+    :meta private:
     """
     def __init__(self, node:Node, default_qos_profile:QoSProfile):
+        """ The Constructor 
+            :meta private:
+        """
         self._node = node
         self._default_qos_profile = default_qos_profile
         self.topics_dict = defaultdict(lambda: (None, None))         # (topic name) > tuple (message class, publisher)
@@ -515,6 +542,19 @@ class PublishTopicManager():
 
     @synchronized
     def add_topic_of_message_class(self, topic:str, message_cls:type, qos_profile:QoSProfile=None) -> Publisher:
+        """ Add a new topic for the given message class
+
+        :meta private:
+        :param topic: the new topic
+        :type topic: str
+        :param message_cls: the message class to be published on this topic
+        :type message_cls: type
+        :param qos_profile: the default QoSProfile, defaults to the QoSProfile in RvizVisualizer
+        :type qos_profile: QoSProfile, optional
+        :raises ValueError: the topic is already used
+        :return: the publisher created for the topic
+        :rtype: Publisher
+        """
         assert isinstance(topic, str), f'TopicManager add_topic: invalid parameter type (topic) = {type(topic)}'
         assert isinstance(message_cls, type), f'TopicManager add_topic: invalid parameter type (message_cls) - requires a ros2 visualization message class'
         assert message_cls in (Marker, MarkerArray, PointCloud2), f'TopicManager add_topic: invalid parameter value (message_cls) must be visualization.msgs'
@@ -536,6 +576,13 @@ class PublishTopicManager():
 
     @synchronized
     def delete_topic(self, topic:str):
+        """ Delete the topic and destroy the associated publisher
+
+        :meta private:
+        :param topic: the topic to be deleted
+        :type topic: str
+        :raises ValueError: the topic is not recognized
+        """
         if topic not in self.topics_dict:
             raise ValueError(f'invalid parameter (topic): the topic not exists')
         message_cls, pub = self.topics_dict[topic]
@@ -549,25 +596,58 @@ class PublishTopicManager():
         self._node.destroy_publisher(pub)
 
     def topic_exists(self, topic:str) -> bool:
+        """ Returns True if the topic is already added to the manager
+
+        :param topic: the query topic
+        :type topic: str
+        :return: True if the topic is already added to the manager
+        :rtype: bool
+        """
         return topic in self.topics_dict
 
     @synchronized
-    def get_topics_list_of_messages(self, message_cls:type) -> list:
+    def get_topics_list_of_messages(self, message_cls:type) -> list[str]:
+        """ Returns the list of topics that are associated with the given message class and have been added to this manager
+
+        :param message_cls: the query message class
+        :type message_cls: type
+        :return: the list of topics of the message class
+        :rtype: list[str]
+        """
         message_cls_name = message_cls.__name__
         return self.topics_of_messages.get(message_cls_name, [])
 
     @synchronized
     def get_publisher_of_topic(self, topic:str) -> Publisher:
+        """ Return the Publisher of the given topic that can be used to publish a message
+
+        :param topic: the query topic
+        :type topic: str
+        :return: the publisher
+        :rtype: Publisher
+        """
         message_cls, pub = self.topics_dict[topic]
         return pub
 
     @synchronized
     def get_message_cls_of_topic(self, topic:str) -> type:
+        """ Return the message type of the given topic
+
+        :param topic: the query topic
+        :type topic: str
+        :return: the message type, which may be Marker, MarkerArray or PointCloud2
+        :rtype: type
+        """
         message_cls, pub = self.topics_dict[topic]
         return message_cls    
 
+# A helper dataclass for the management of object messages in RvizVisualizer
 @dataclass
 class RvizObjectModel():
+    """ A helper dataclass for the management of object messages in RvizVisualizer
+
+        :meta private:
+    """
     the_object: Any
     topic: str
     pub_time: float = None
@@ -580,17 +660,26 @@ class RvizVisualizer():
     """ A publisher of markers, which handles persistent markers, which is published repeatedly and temporary markers,
         which are published once.
     """
-    def __init__(self, node:Node, fixed_frame:str='map', callback_group=None, _default_qos_profile=None, **config_dict):
-        """ The constructur
+    def __init__(self, node:Node, fixed_frame:str='map', callback_group:CallbackGroup=None, _default_qos_profile:QoSProfile=None, **config_dict):
+        """ The Constructor
 
         :param node: the node running this RVizVisualizer object
-        :type node: rclpy.Node
-        :param callback_group: the callback group or None    
-        :param pub_marker_cycle: the default period of publishing marker, defaults to 1.0 second
-        :param pub_cloud_cycle: the default period of publishing point cloud, defaults to 1.0 second
-        :param topic_marker: the topic used to publish markers, defaults to visualization_marker
-        :param topic_cloud: the topic used to publish point cloud, defaults to visualization_cloud     
+        :type node: Node
+        :param fixed_frame: the fixed frame to serve as the root of the transforms, defaults to 'map'
+        :type fixed_frame: str, optional
+        :param callback_group: the callback group, defaults to ReentrantCallbackGroup
+        :type callback_group: CallbackGroup, optional
+        :param _default_qos_profile: the default QoSProfile to be applied to the default topics and new topics without one specified, defaults to None
+        :type _default_qos_profile: QoSProfile, optional
+        :param default_marker_topic: the default marker topic for publishing, default to '/visualization_marker'
+        :param default_marker_array_topic: the default marker array topic for publishing, default to '/visualization_marker_array'
+        :param default_pointcloud_topic: the default pointcloud topic for publishing, default to '/visualization_cloud'        
+        :param refresh_timer_cycle: the cycle period in seconds of executing the refresh publishing task, default to 10.0
+        :param best_effort_timer_cycle: the cycle period in seconds of executing the best effort task, default to 0.01
+        :param tf_refresh_timer_cycle: the cycle period in seconds of executing the transform tfs publishing task, default to 0.05
+        :param auto_refresh: True if auto-refresh of cache message objects by publishing is enabled, default to True 
         """
+
         self.object_queue_lock = threading.RLock()
         # input parameter
         self._node = node
@@ -618,17 +707,19 @@ class RvizVisualizer():
         self.force_refresh:bool = False
         # set default values for keyword argument
         self.auto_refresh = config_dict.get('auto_refresh', True)    
-        self.object_refresh_cycle = config_dict.get('object_refresh_cycle', 10.0)     
-        self.best_effort_pub_cycle = config_dict.get('best_effort_pub_cycle', 0.01)               # 100 Hz
-        self.tf_refresh_cycle = config_dict.get('tf_refresh_cycle', 0.05)                         # 20 Hz
+        self.refresh_timer_cycle = config_dict.get('refresh_timer_cycle', 10.0)     
+        self.best_effort_timer_cycle = config_dict.get('best_effort_timer_cycle', 0.01)                       # 100 Hz
+        self.tf_refresh_timer_cycle = config_dict.get('tf_refresh_timer_cycle', 0.05)                         # 20 Hz
         logger.info(f'parameter auto_refresh: {self.auto_refresh}')
-        logger.info(f'parameter object_refresh_cycle: {self.object_refresh_cycle}')
-        logger.info(f'parameter best_effort_pub_cycle: {self.best_effort_pub_cycle}')
-        logger.info(f'parameter tf_refresh_cycle: {self.tf_refresh_cycle}')
+        logger.info(f'parameter refresh_timer_cycle: {self.refresh_timer_cycle}')
+        logger.info(f'parameter best_effort_timer_cycle: {self.best_effort_timer_cycle}')
+        logger.info(f'parameter tf_refresh_timer_cycle: {self.tf_refresh_timer_cycle}')
 
         # the storage for markers
-        self.objects_queue:list[RvizObjectModel] = []                 # RvizObjectModel (topic, the_object, pub_time, tf_frame, ns, id)
-        self.best_effort_objects_queue:list[RvizObjectModel] = []    
+        # cached_objects are to be refreshed regularly if auto-refresh is true
+        # outbox objects are to be published once at the best effort (using the best effort timer calls)
+        self.cached_objects_queue:list[RvizObjectModel] = []                 # RvizObjectModel (topic, the_object, pub_time, tf_frame, ns, id)
+        self.outbox_objects_queue:list[RvizObjectModel] = []    
 
         self.to_delete_all_pointclouds = False                  # a flag to notify the pointcloud callback to clear all 
         # setup tf publish
@@ -636,27 +727,41 @@ class RvizVisualizer():
         self.tfs_dict = defaultdict(lambda: None)               # frame_name -> dict
      
         # setup timers
-        self.timer_tf = self._node.create_timer(self.tf_refresh_cycle, self._cb_timer_tf, callback_group=self.callback_group)
-        self.timer_best_effort_pub_cycle = self._node.create_timer(self.best_effort_pub_cycle, self._cb_timer_best_effort, callback_group=self.callback_group)
-        self.timer_object_refresh_cycle = self._node.create_timer(self.object_refresh_cycle, self._cb_timer_object_refresh, callback_group=self.callback_group)
+        self.timer_tf = self._node.create_timer(self.tf_refresh_timer_cycle, self._cb_timer_tf, callback_group=self.callback_group)
+        self.timer_best_effort = self._node.create_timer(self.best_effort_timer_cycle, self._cb_timer_best_effort, callback_group=self.callback_group)
+        self.timer_refresh = self._node.create_timer(self.refresh_timer_cycle, self._cb_timer_refresh, callback_group=self.callback_group)
 
+    # internal function to return the RvizObjectModel object model based on the message object
     def _get_object_model(self, the_object:Any) -> RvizObjectModel:
-        for object_model in self.objects_queue:
+        """ internal function 
+        :meta private:
+        """
+        for object_model in self.cached_objects_queue:
             if object_model.the_object == the_object:
                 return object_model
         return None
 
+    # internal function to return the ros time in seconds as a float
     def _get_ros_time_in_seconds(self, offset:float=None) -> float:
+        """ internal function 
+        :meta private:
+        """
         if not isinstance(offset, numbers.Number):       
             offset = 0
         return self._node.get_clock().now().nanoseconds / 1e9 + offset
 
+    # internal callback function to run the best effort task of publishing the outbox objects
     def _cb_timer_best_effort(self):
+        """ internal callback function 
+        :meta private:
+        """
         with self.object_queue_lock: 
+            # compute the current time from ros
             current_time = self._node.get_clock().now()
             current_time_in_secs = current_time.nanoseconds / 1e9
+            # iterate through the outbox objects and publish them one by one if the pub_time is reached
             object_model:RvizObjectModel
-            for object_model in list(self.best_effort_objects_queue):
+            for object_model in list(self.outbox_objects_queue):
                 # logger.warning(f'_cb_timer_best_effort: {object_model.pub_time is None or current_time_in_secs > object_model.pub_time} {object_model}')
                 if object_model.pub_time is None or current_time_in_secs > object_model.pub_time:
                     the_object = object_model.the_object
@@ -664,23 +769,30 @@ class RvizVisualizer():
                         the_object.header.stamp = current_time.to_msg()
                     the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
                     the_publisher.publish(the_object)
-                    self.best_effort_objects_queue.remove(object_model)
+                    self.outbox_objects_queue.remove(object_model)
 
-    def _cb_timer_object_refresh(self):
+    # internal callback function to run the refresh task of publishing the cached objects 
+    def _cb_timer_refresh(self):
+        """ internal callback function 
+        :meta private:
+        """
+        # return if auto_refresh is False and force_refresh if False
         if not self.auto_refresh and not self.force_refresh:
             return
         with self.object_queue_lock: 
+            # compute the current time from ros
             current_time = self._node.get_clock().now()
-            # current_time_in_secs = current_time.nanoseconds / 1e9
-            object_model:RvizObjectModel
-            for object_model in list(self.objects_queue):
-                # logger.warning(f'_cb_timer_object_refresh: {object_model}')
-                the_object = object_model.the_object
-                if object_model.update_stamp and isinstance(the_object, (Marker, PointCloud2)):
+            # iterate through the cached objects in the list
+            cached_object_model:RvizObjectModel
+            for cached_object_model in list(self.cached_objects_queue):
+                the_object = cached_object_model.the_object
+                # update the stamp attribute of the message if the flag is True and the message type if Marker or PointCloud2
+                if cached_object_model.update_stamp and isinstance(the_object, (Marker, PointCloud2)):
                     the_object.header.stamp = current_time.to_msg()
-                the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
+                the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(cached_object_model.topic)
                 the_publisher.publish(the_object)   
 
+    # internal callback function to run the transform publishing task
     def _cb_timer_tf(self):
         """ internal callback function 
         :meta private:
@@ -692,8 +804,8 @@ class RvizVisualizer():
 
     # internal function: publish the transform of a specific named object
     def _pub_transform(self, name:str, pose, frame=None):
-        """ publish the transform of an object
-
+        """ internal function to publish the transform of an object
+        :meta private:
         :param name: name of the object
         :type name: str
         :param pose: the pose of the object 
@@ -717,7 +829,11 @@ class RvizVisualizer():
             raise TypeError(f'A parameter is invalid')
         self.tf_broadcaster.sendTransform(pose_tools.pose_stamped_to_transform_stamped(pose_stamped, name))
 
+    # internal function to return the default topic suitable for publishing the object in the parameter
     def _get_default_topic(self, the_object:Any) -> str:
+        """ internal function 
+        :meta private:
+        """
         if isinstance(the_object, Marker):
             return self.default_marker_topic
         elif isinstance(the_object, MarkerArray):
@@ -733,7 +849,7 @@ class RvizVisualizer():
     def deactivate_topic(self, topic:str):
         self.topic_manager.delete_topic(topic)
 
-    def publish_and_register(self, the_object:Any, topic:str=None, pub_tf:bool=False) -> Any:
+    def publish_and_cache(self, the_object:Marker|MarkerArray|PointCloud2, topic:str=None, pub_tf:bool=False, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
         """ Publish an object to rviz and again if auto-refresh is true
 
         :param the_object: A object to be published
@@ -747,23 +863,23 @@ class RvizVisualizer():
         if not self.topic_manager.topic_exists(topic):
             raise ValueError(f'invalid parameter (topic): {topic} not activated')
         # publish the object as soon as possible
-        self.publish_best_effort_once(the_object, topic, delay=0.0)
+        self.publish(the_object, topic, delay=0.0)
         # create a RvizObjectModel and append to the objects_queue
         with self.object_queue_lock:
             if pub_tf and isinstance(the_object, Marker):
                 # create a custom_tf if pub_tf is True and the object is a Marker
                 tf_frame = f'{the_object.ns}.{the_object.id}'
                 self.publish_custom_tf(tf_frame, the_object.header.frame_id, the_object.pose)
-                self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, tf_frame=tf_frame, ns=the_object.ns, id=the_object.id))
+                self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, tf_frame=tf_frame, ns=the_object.ns, id=the_object.id, update_stamp=update_stamp))
             elif isinstance(the_object, Marker):
                 # if pub_tf is False and the object is a Marker
-                self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, ns=the_object.ns, id=the_object.id))
+                self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, ns=the_object.ns, id=the_object.id, update_stamp=update_stamp))
             else:
                 # for other object classes
-                self.objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic))
+                self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, update_stamp=update_stamp))
         return the_object
             
-    def publish_best_effort_once(self, the_object:Any, topic:str=None, delay:float=None, update_stamp:bool=True) -> Any:
+    def publish(self, the_object:Marker|MarkerArray|PointCloud2, topic:str=None, delay:float=None, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
         """ Add an once-only marker, which is to be published only once
 
         :param marker: A marker to be published only once
@@ -780,7 +896,7 @@ class RvizVisualizer():
         pub_time = None if delay is None else self._get_ros_time_in_seconds() + delay
         with self.object_queue_lock:
             # self.best_effort_objects_queue.append({'object': the_object, 'topic': topic, 'pub_time': pub_time})     
-            self.best_effort_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time, update_stamp=update_stamp))
+            self.outbox_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, pub_time=pub_time, update_stamp=update_stamp))
         return the_object
 
     def publish_all_objects_again(self) -> None:
@@ -789,7 +905,7 @@ class RvizVisualizer():
         """
         def execute_once():
             self.force_refresh = True
-            self._cb_timer_object_refresh()
+            self._cb_timer_refresh()
             one_shot_timer.cancel()
             self._node.destroy_timer(one_shot_timer)
 
@@ -828,7 +944,7 @@ class RvizVisualizer():
                 self._delete_pointcloud(the_object)
             # delete the cache
             if object_model is not None:
-                self.objects_queue.remove(object_model)
+                self.cached_objects_queue.remove(object_model)
 
     # internal function to create delete message for marker deletion 
     def _delete_marker(self, the_object:Marker):
@@ -837,9 +953,9 @@ class RvizVisualizer():
         # set action DELETE
         the_object.action = Marker.DELETE
         if object_model is not None:
-            self.publish_best_effort_once(object_model.the_object, object_model.topic, delay=0.0)
+            self.publish(object_model.the_object, object_model.topic, delay=0.0)
         else:
-            self.publish_best_effort_once(the_object, delay=0.0)
+            self.publish(the_object, delay=0.0)
         # remove tf_frame if defined
         if object_model is not None:
             if object_model.tf_frame in self.tfs_dict:
@@ -850,19 +966,19 @@ class RvizVisualizer():
         assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a MarkerArray'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         if object_model is not None:
-            self.publish_best_effort_once(create_delete_all_marker_array(), object_model.topic, delay=0.0)
+            self.publish(create_delete_all_marker_array(), object_model.topic, delay=0.0)
         else:
             if the_object.markers is not None and len(the_object.markers) > 0:
-                self.publish_best_effort_once(create_delete_all_marker_array(), delay=0.0)
+                self.publish(create_delete_all_marker_array(), delay=0.0)
 
     # internal function to create empty pointcloud message for pointcloud deletion 
     def _delete_pointcloud(self, the_object:PointCloud2):
         assert isinstance(the_object, (PointCloud2)), 'invalid arameter (the_object): must be a PointCloud'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         if object_model is not None:
-            self.publish_best_effort_once(create_empty_pointcloud(), object_model.topic, delay=0.0)   
+            self.publish(create_empty_pointcloud(), object_model.topic, delay=0.0)   
         else:
-            self.publish_best_effort_once(create_empty_pointcloud(), delay=0.0)     
+            self.publish(create_empty_pointcloud(), delay=0.0)     
             
     def delete_registered_objects_by_topics(self, topics_list:list=None):
         """ delete all objects from rviz, optionally only the topics in the topics_list
@@ -880,7 +996,7 @@ class RvizVisualizer():
         # iterate through the objects_queue
         object_model: RvizObjectModel
         with self.object_queue_lock:
-            for object_model in list(self.objects_queue):
+            for object_model in list(self.cached_objects_queue):
                 if object_model.topic in topics_list:
                     if object_model.topic not in topics_deleted_list:
                         self.delete_object(object_model.the_object)
@@ -907,11 +1023,11 @@ class RvizVisualizer():
             if message_cls is None:
                 continue
             if message_cls == Marker:
-                self.publish_best_effort_once(create_delete_all_marker(frame_id=frame_id), topic, update_stamp=True)
+                self.publish(create_delete_all_marker(frame_id=frame_id), topic, update_stamp=True)
             elif message_cls == MarkerArray:
-                self.publish_best_effort_once(create_delete_all_marker_array(frame_id=frame_id), topic, update_stamp=False)
+                self.publish(create_delete_all_marker_array(frame_id=frame_id), topic, update_stamp=False)
             elif message_cls == PointCloud2:
-                self.publish_best_effort_once(create_empty_pointcloud(frame_id=frame_id), topic, update_stamp=False)
+                self.publish(create_empty_pointcloud(frame_id=frame_id), topic, update_stamp=False)
 
     def audit_rviz_subscriptions(self) -> dict[str, list] | None:
         """ audit the rviz node and query the topic subscription

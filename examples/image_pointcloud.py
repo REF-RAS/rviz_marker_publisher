@@ -38,8 +38,8 @@ def main():
     # add an image as a pointcloud
     logger.info('(add) create_pointcloud_from_image CoralFish.png')
     image_bgr = cv2.imread(os.path.join(os.path.dirname(__file__), '../docs/assets/CoralFish.png'))
-    image_pointcloud2:PointCloud2 = rviz_marker.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], reference_frame='map')
-    rv.publish_best_effort_once(image_pointcloud2)
+    image_pointcloud2:PointCloud2 = rviz_marker.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
+    rv.publish(image_pointcloud2)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()
