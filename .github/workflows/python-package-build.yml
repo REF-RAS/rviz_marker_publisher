@@ -1,0 +1,38 @@
+name: Python Package Build and Push
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target Environment'
+        required: true
+        default: 'github'
+
+jobs:
+  build:
+    name: Build Wheel and Push to GitHub Packages
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build Package
+        # Creates the .whl and .tar.gz distributions in the dist/ folder
+        run: uv build --no-sources 
+
+      - name: Publish to GitHub Packages Registry
+        # Publishes the freshly built contents of dist/ immediately
+        run: |
+          uv publish \
+            --publish-url "https://github.com{{ github.repository }}"
+        env:
+          UV_PUBLISH_USERNAME: ${{ github.actor }}
+          UV_PUBLISH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
