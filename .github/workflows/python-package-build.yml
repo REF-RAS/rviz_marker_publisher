@@ -28,11 +28,10 @@ jobs:
         # Creates the .whl and .tar.gz distributions in the dist/ folder
         run: uv build --no-sources 
 
-      - name: Publish to GitHub Packages Registry
-        # Publishes the freshly built contents of dist/ immediately
-        run: |
-          uv publish \
-            --publish-url "https://github.com{{ github.repository }}"
+      - name: Create GitHub Release and Upload Assets
         env:
-          UV_PUBLISH_USERNAME: ${{ github.actor }}
-          UV_PUBLISH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} # Built-in token; no manual settings required
+        run: |
+          gh release create ${{ github.ref_name }} dist/* \
+            --title "Release ${{ github.ref_name }}" \
+            --generate-notes

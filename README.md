@@ -44,23 +44,22 @@ def main():
     # wait for the discovery and matching on the dds layer
     time.sleep(1.0)
 
-    # use rviz_marker_publisher to create and publish a sphere
+    # use rviz_marker_publisher to create and publish a sphere to the default topic for markers
     sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
 ```
 
 ### Features
 
-- Provide the builtin marker types, including sphere, box, cylindar, text, line, path, arrow, and mesh, and the pointcloud type.
-    - Accepts pose formats including `Pose`, `PoseStamped`, `xyzrpy`, `xyzqqqq`, and `xyz`.
-    - Accepts a custom transformation as the frame.
-- Support organization of markers into logical groups through marker array and namespace.
-- Support deletion of markers, marker arrays and pointclouds.
-- Manage caching of markers and selectively auto-publishing of cached markers, to make them persistence for late-joining subscribers (when the qos durability of the topic is set to VOLATILE).
-- Support custom transformations (`tf`) and optionally connected to the pose of a marker.
-- Provide utilities for updating the pose of markers.
-
-
+- Create and publish the builtin marker types, including sphere, box, cylindar, text, line, path, arrow, and mesh, and pointclouds.
+    - Customize the pose, size, colour, lifetime and frame of reference of a marker.
+    - Specify the pose with various formats including `Pose`, `PoseStamped`, `xyzrpy`, `xyzqqqq`, and `xyz`.
+    - Create a transform between a marker and another reference frame.
+- Organize markers into logical sets through marker arrays (`MarkerArray`) or namespace.
+- Delete markers, marker arrays and pointclouds.
+- Cache selected markers for auto-repeat publishing - late-joining subscribers can still receive them even if the QoS durability of the topic is set to VOLATILE.
+- Update the pose of markers and that of the associated transform.
+- Add and delete new topics and configure the QoS of the associated publishers.
 
 ### Attribution
 
