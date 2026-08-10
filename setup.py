@@ -3,18 +3,22 @@ import os, glob, sys, subprocess
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py
 
-from ament_index_python import get_packages_with_prefixes, get_package_share_directory
+# from ament_index_python import get_packages_with_prefixes, get_package_share_directory
 
 # rosdep update && rosdep install -y -r -i --rosdistro jazzy --from-paths .
 
-# colcon build --packages-select rviz_marker_tools_ros2 --event-handlers console_direct+ 
-# colcon build --symlink-install --packages-select rviz_marker_tools_ros2 --event-handlers console_stderr+
+# pip install -e /workspace/ros2_ws/src/rviz_marker_publisher/
+
+# colcon build --packages-select rviz_marker_publisher --event-handlers console_direct+ 
+# colcon build --symlink-install --packages-select rviz_marker_publisher --event-handlers console_direct+ 
+# colcon build --symlink-install --packages-select rviz_marker_publisher --event-handlers console_stderr+
 # colcon build --symlink-install
 
-PACKAGE_NAME = 'rviz_marker_tools_ros2'
+PACKAGE_NAME = 'rviz_marker_publisher'
 INSTALL_REQUIRES = [
-    'setuptools',
-    'opencv_contrib_python>=5'
+    'opencv_contrib_python>=5',
+    'wrapt',
+    'pandas'
 ]
 EXTRA_REQUIRES = {
     'test': ['pytest'],
@@ -24,13 +28,13 @@ EXTRA_REQUIRES = {
 class UVInstallThenBuild(build_py):
     def run(self):
         dependencies = INSTALL_REQUIRES
-        print(f"--> Forcing dependency installation via UV: {dependencies}")
+        print(f"(UVInstallThenBuild) Forcing dependency installation via UV: {dependencies} {__file__}")
         
-        # Check if uv is installed, default to pip if missing
+        # check if uv is installed, default to pip if missing
         uv_path = subprocess.run(["which", "uv"], capture_output=True, text=True).stdout.strip()
         installer = ['sudo', 'uv', "pip", "install"] if uv_path else [sys.executable, "-m", "pip", "install"]
         
-        # Add --system flag if outside a virtual environment to prevent uv from blocking global installs
+        # add --system flag if outside a virtual environment to prevent uv from blocking global installs
         if not uv_path or "VIRTUAL_ENV" not in os.environ:
             installer.append("--system")
 
@@ -77,7 +81,7 @@ setup(
     maintainer='Andrew Lui',
     maintainer_email='ak.lui@qut.edu.au',
     description='The RViz Marker Tools for ROS2',
-    license='BSD-3',
+    license='NON AI BSD-3',
     extras_require=EXTRA_REQUIRES,
     entry_points={
         'console_scripts': find_console_scripts(['examples']),

@@ -88,35 +88,36 @@ RUN echo "${USER} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
 RUN mkdir -p ${HOME}/.cache ${HOME}/.local
 # change the home folder owner to user
 RUN chown -R ${USER}:${USER} ${HOME}
-WORKDIR ${HOME}
 
 # install the python modules specified
 # remove permanantly the lock for systen managed package bypass PEP 668 restriction
 RUN rm /usr/lib/python*/EXTERNALLY-MANAGED  
 # install python modules using uv: pull the official pre-compiled uv binary
 COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+
+# change to user for the rest of the operations
+USER ${USER}
+
 # set environment variable for uv inside docker
 ENV UV_SYSTEM_PYTHON=1
 ENV UV_COMPILE_BYTECODE=1
 
 COPY assets/requirements.txt /tmp/requirements.txt
 COPY assets/requirements_dev.txt /tmp/requirements_dev.txt
-RUN uv pip install -r /tmp/requirements.txt
-RUN uv pip install -r /tmp/requirements_dev.txt
-RUN rm /tmp/requirements*.txt
-RUN uv cache clean
+RUN sudo uv pip install -r /tmp/requirements.txt --system
+RUN sudo uv pip install -r /tmp/requirements_dev.txt --system
+RUN sudo rm /tmp/requirements*.txt
+RUN sudo uv cache clean
 
 # install python modules using pip
 # COPY assets/requirements.txt /tmp/requirements.txt
 # RUN pip install -r /tmp/requirements.txt --no-warn-script-location --no-cache-dir 
 # RUN rm /tmp/requirements.txt
 
-# change to user for the rest of the operations
-USER ${USER}
-
 # create ros2 workspace
 ENV ROS2_WS=${HOME}/ros2_ws
 RUN mkdir -p ${ROS2_WS}/src
+WORKDIR ${ROS2_WS}
 # update rosdep
 RUN rosdep update && rosdep install -y -r -i --rosdistro ${ROS_DISTRO} --from-paths .
 

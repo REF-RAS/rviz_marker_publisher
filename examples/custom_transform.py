@@ -18,18 +18,18 @@ from rclpy.duration import Duration
 from geometry_msgs.msg import Pose, Point, Quaternion
 
 import rviz_marker
-from rviz_marker import RvizVisualizer, get_logger
+from rviz_marker import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer(the_node)
+    rv = RvizMarkerPublisher(the_node)
     rviz_marker.spin_in_thread(the_node)
-    # wait for the discovery and matching on the dds layer
+    # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
-    time.sleep(3.0)
+    time.sleep(2.0)
     # remove existing markers
     logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
     rv.delete_all_objects_by_topics()

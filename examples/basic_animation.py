@@ -15,14 +15,14 @@ import time
 import rclpy
 from rclpy.node import Node
 import rviz_marker
-from rviz_marker import RvizVisualizer, get_logger
+from rviz_marker import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
-    rv = RvizVisualizer(the_node)
+    rv = RvizMarkerPublisher(the_node)
     rviz_marker.spin_in_thread(the_node)
     # wait for the discovery and matching on the dds layer
     logger.info('(wait) discovery and matching of publishers and subscribers')

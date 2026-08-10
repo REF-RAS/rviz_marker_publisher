@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>rviz_marker_tools_ros2</name>
+  <name>rviz_marker_publisher</name>
   <version>0.0.1</version>
   <description>RViz marker tools for ROS2</description>
   <maintainer email="ak.lui@qut.edu.au">Andrew Lui</maintainer>
@@ -19,7 +19,6 @@
   <depend>tf_transformations</depend>
 
   <!-- ros 2 runtime dependencies go here -->
-  <depend>python3-opencv</depend>
 
   <test_depend>python3-pytest</test_depend>
 

@@ -4,7 +4,7 @@ from launch import LaunchDescription
 from launch_ros.actions import Node
 
 def generate_launch_description():
-    ros2_package_name = __package__.split('.')[0] if __package__ else 'rviz_marker_tools_ros2'
+    ros2_package_name = __package__.split('.')[0] if __package__ else 'rviz_marker_publisher'
     # Find the package share directory
     pkg_share = get_package_share_directory(ros2_package_name)
     

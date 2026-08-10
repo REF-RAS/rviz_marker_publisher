@@ -21,7 +21,7 @@ from sensor_msgs.msg import PointCloud2
 from ament_index_python import get_packages_with_prefixes, get_package_share_directory
 
 import rviz_marker
-from rviz_marker import RvizVisualizer, get_logger
+from rviz_marker import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -29,11 +29,11 @@ def main():
         rclpy.init()
         the_node = Node(node_name='test_rv_node') 
         # create the RVizVisualizer 
-        rv = RvizVisualizer(the_node)
+        rv = RvizMarkerPublisher(the_node)
         rviz_marker.spin_in_thread(the_node)
-        # wait for the discovery and matching on the dds layer
+        # wait for the discovery and matching of publishers and subscribers 
         logger.info('(wait) discovery and matching of publishers and subscribers')
-        time.sleep(3.0)
+        time.sleep(2.0)
         # remove existing markers
         logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
         rv.delete_all_objects_by_topics()
@@ -70,7 +70,7 @@ def main():
         # computing the full path of the stl file
         # teapot_mesh = 'file://' + os.path.join(os.path.dirname(__file__), 'assets/utah_teapot.stl')
         # teapot_mesh = os.path.join(os.path.dirname(__file__), 'assets/utah_teapot.stl')
-        teapot_mesh = 'package://rviz_marker_tools_ros2/examples/assets/utah_teapot.stl' 
+        teapot_mesh = 'package://rviz_marker_publisher/examples/assets/utah_teapot.stl' 
         logger.info(f'(add) create_mesh_marker from mesh file location {teapot_mesh}')
         mesh_marker = rviz_marker.create_mesh_marker(name='teapot', id=1, file_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
                                         frame_id='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
@@ -78,7 +78,7 @@ def main():
         the_node.get_clock().sleep_for(Duration(seconds=5))
         # add an image as a pointcloud
         logger.info('(add) create_pointcloud_from_image CoralFish.png')
-        image_file = os.path.join(get_package_share_directory('rviz_marker_tools_ros2'), 'examples/assets/CoralFish.png')
+        image_file = os.path.join(get_package_share_directory('rviz_marker_publisher'), 'examples/assets/CoralFish.png')
         image_bgr = cv2.imread(image_file)
         image_pointcloud2:PointCloud2 = rviz_marker.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
         rv.publish(image_pointcloud2)

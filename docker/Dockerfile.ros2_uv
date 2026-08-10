@@ -99,9 +99,6 @@ COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
 # change to user for the rest of the operations
 USER ${USER}
 
-# complete rosdep installation
-RUN rosdep update && rosdep install -y -r -i --rosdistro ${ROS_DISTRO} --from-paths .
-
 # install python modules using uv
 ENV UV_SYSTEM_PYTHON=1
 ENV UV_COMPILE_BYTECODE=1
@@ -111,10 +108,14 @@ COPY assets/requirements_dev.txt /tmp/requirements_dev.txt
 RUN sudo uv pip install -r /tmp/requirements.txt --system
 RUN sudo uv pip install -r /tmp/requirements_dev.txt --system
 RUN sudo rm /tmp/requirements*.txt
+RUN sudo uv cache clean
 
 # create ros2 workspace
 ENV ROS2_WS=${HOME}/ros2_ws
 RUN mkdir -p ${ROS2_WS}/src
+
+# complete rosdep installation
+RUN rosdep update && rosdep install -y -r -i --rosdistro ${ROS_DISTRO} --from-paths .
 
 # modify the login script
 RUN echo "source /opt/ros/${ROS_DISTRO}/setup.bash" >> ~/.bashrc

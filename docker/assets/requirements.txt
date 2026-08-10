@@ -1,13 +1,11 @@
 # common utilities packages 
 pyyaml
 typeguard
-wrapt
+jinja2
+typeguard
 
 # ros2 python packages
+setuptools<80.0.0
 transforms3d
 
-# common python packages 
-opencv_contrib_python>=5
-pandas
-numpy
 

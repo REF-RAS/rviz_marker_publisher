@@ -13,12 +13,60 @@
 
 ## Introduction
 
-The RViz mark tools is a ROS 2 (jazzy) based Python module for simplifying the rendering of markers in RViz. Markers are primitive shapes or custom mesh objects displayed at specified poses. Here are common use cases of RViz markers.
-- Scene object visualization.
-- Highlighting regions, planes, orientations, and positions for planning and reference.
-- Object animation or simulation.
+The `rviz_marker_publisher` is a ROS2 package and a Python API for drawing markers and pointclouds inside visualization tools such as RViz2.  The objective of the package is to hide away the naunces of creating and publishing different types of marker messages, and to provide value-adding services such as marker caching and refreshing, management of topics, publishers, and custom transforms.
 
-The documentation is to be finalized.
+The package can significantly reduced the development effort in the following use-cases:
+- Real-time scene visualization for system debugging.
+    - Define primitives, meshes, and pointcloud for scene visualization and understanding.
+    - Use colors, opacity and scales (i.e. dimensions) to represent attributes.
+    - Highlight regions, planes, orientations and tracks for plan and collision pereception.
+    - Display labels or floating status text next to objects.
+    - Define transforms and frames of reference for placing objects into logical groups.
+- Interactive visualization for demonstrations. 
+
+### A Simple Script
+
+The following simple script creates a node and then uses the package `rviz_marker_publisher` to publish a sphere marker of size 0.5 at position (0, 0, 0).  There is one line for creating a sphere marker with the desired size, position and colour, and another line for publishing the marker so that a visualizer such as RViz2 can receive and display the marker through the same ROS topic.
+
+```python
+import rclpy
+from rclpy.node import Node
+import rviz_marker
+from rviz_marker import RvizMarkerPublisher
+
+
+def main():
+    rclpy.init()
+    the_node = Node(node_name='test_rv_node') 
+    # create the RVizVisualizer 
+    rv = RvizMarkerPublisher(the_node)
+    rviz_marker.spin_in_thread(the_node)
+    # wait for the discovery and matching on the dds layer
+    time.sleep(1.0)
+
+    # use rviz_marker_publisher to create and publish a sphere
+    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    rv.publish(sphere_marker) 
+```
+
+### Features
+
+- Provide the builtin marker types, including sphere, box, cylindar, text, line, path, arrow, and mesh, and the pointcloud type.
+    - Accepts pose formats including `Pose`, `PoseStamped`, `xyzrpy`, `xyzqqqq`, and `xyz`.
+    - Accepts a custom transformation as the frame.
+- Support organization of markers into logical groups through marker array and namespace.
+- Support deletion of markers, marker arrays and pointclouds.
+- Manage caching of markers and selectively auto-publishing of cached markers, to make them persistence for late-joining subscribers (when the qos durability of the topic is set to VOLATILE).
+- Support custom transformations (`tf`) and optionally connected to the pose of a marker.
+- Provide utilities for updating the pose of markers.
+
+
+
+### Attribution
+
+If this repository has contributed to your work, the Robotics and Autonomous Systems Group suggests that the following statement is to be added to relevant publications or reports.
+
+_"Part of this work was enabled by use of the Robotics and Autonomous Systems Group of the Research Engineering Facility at the Queensland University of Technology (QUT)."_
 
 ### Developer
 

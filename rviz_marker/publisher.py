@@ -40,7 +40,6 @@ from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
 
 from rviz_marker.pose_tools import list_to_pose, pose_to_xyzq
-from rviz_marker.package_tools import PackageFile
 from rviz_marker.logging_tools import logger
 from rviz_marker.lock_tools import synchronized
 import rviz_marker.pose_tools as pose_tools
@@ -97,9 +96,14 @@ def _create_marker(name:str, id:int, marker_type:int=None, frame_id:str=None, li
     if isinstance(marker_type, int):
         the_marker.type = marker_type
     # the pose
-    if isinstance(pose, Pose):
+    if isinstance(pose, PoseStamped):
+        the_marker.pose = pose.pose
+    elif isinstance(pose, Pose):
         the_marker.pose = pose
     elif isinstance(pose, (list, tuple)):
+        if len(pose) == 3:  # xyz > xyzrpy
+            pose = pose + [0, 0, 0]
+        # the pose is now either xyzrpy or xyzqqqq
         the_marker.pose = list_to_pose(pose)
     # the scale
     if isinstance(scale, numbers.Number):
@@ -378,11 +382,11 @@ def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str
         return None
 
     the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
-    try:
-        file_uri = PackageFile.resolve_to_valid_uri(file_uri)
-    except Exception as ex:
-        logger.warning(f'create_mesh_marker: Invalid model_file for object ({file_uri}): {ex}')
-        return
+    # try:
+    #     file_uri = PackageFile.resolve_to_valid_uri(file_uri)
+    # except Exception as ex:
+    #     logger.warning(f'create_mesh_marker: Invalid model_file for object ({file_uri}): {ex}')
+    #     return
     the_marker.mesh_resource = file_uri
     the_marker.mesh_use_embedded_materials = True
     return the_marker
@@ -668,11 +672,11 @@ class RvizCustomTFModel():
     pose_linked_marker: bool = False        # the pose is linked to a Marker and therefore updated through the Marker
     linked_marker: Marker = None            # the linked marker 
 
-class RvizVisualizer():
+class RvizMarkerPublisher():
     """ A publisher of markers, which handles persistent markers, which is published repeatedly and temporary markers,
         which are published once.
     """
-    def __init__(self, node:Node, fixed_frame:str='map', callback_group:CallbackGroup=None, _default_qos_profile:QoSProfile=None, **config_dict):
+    def __init__(self, node:Node, fixed_frame:str='map', callback_group:CallbackGroup=None, default_qos_profile:QoSProfile=None, **config_dict):
         """ The Constructor
 
         :param node: the node running this RVizVisualizer object
@@ -701,7 +705,7 @@ class RvizVisualizer():
         self.callback_group = ReentrantCallbackGroup() if callback_group is None else callback_group
         # create qos profile
         self._default_qos_profile = QoSProfile(durability=QoSDurabilityPolicy.VOLATILE, reliability=QoSReliabilityPolicy.RELIABLE, 
-                                        history=QoSHistoryPolicy.KEEP_LAST, depth=50) if _default_qos_profile is None else _default_qos_profile
+                                        history=QoSHistoryPolicy.KEEP_LAST, depth=50) if default_qos_profile is None else default_qos_profile
         # create topic manager
         self.topic_manager = PublishTopicManager(self._node, self._default_qos_profile)
         # set default topics of the three message classes and add the to the topic manager
