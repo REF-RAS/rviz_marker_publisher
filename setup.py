@@ -1,4 +1,5 @@
 import os, glob, sys, subprocess
+from pathlib import Path
 
 from setuptools import find_packages, setup
 from setuptools.command.build_py import build_py
@@ -32,15 +33,41 @@ class UVInstallThenBuild(build_py):
         
         # check if uv is installed, default to pip if missing
         uv_path = subprocess.run(["which", "uv"], capture_output=True, text=True).stdout.strip()
-        installer = ['sudo', 'uv', "pip", "install"] if uv_path else [sys.executable, "-m", "pip", "install"]
-        
-        # add --system flag if outside a virtual environment to prevent uv from blocking global installs
-        if not uv_path or "VIRTUAL_ENV" not in os.environ:
-            installer.append("--system")
+        if uv_path:
+            installer = ['uv', "pip", "install"]
+            # add --system flag it is running in a docker container
+            if Path('/.dockerenv').is_file():
+                if self.is_sudoer():
+                    installer.insert(0, 'sudo')
+                installer.append("--system")
+            installer = installer + dependencies
+        else:  # fallback to pip install
+            installer = [sys.executable, "-m", "pip", "install"]
+            if Path('/.dockerenv').is_file():
+                if self.is_sudoer():
+                    installer.insert(0, 'sudo')
+                installer.append("--break-system-packages")
+            installer = installer + dependencies
 
-        subprocess.run(installer + dependencies, check=True)
+        subprocess.run(installer, check=True)
         super().run()
-
+        
+    def is_sudoer(self) -> bool:
+        """Checks if the current user has sudo privileges without prompting for a password."""
+        try:
+            # -v updates the validation credentials
+            # -n forces non-interactive mode (fails immediately if password is required)
+            subprocess.run(
+                ["sudo", "-v", "-n"], 
+                check=True, 
+                stdout=subprocess.DEVNULL, 
+                stderr=subprocess.DEVNULL
+            )
+            return True
+        except subprocess.CalledProcessError:
+            # The command returns a non-zero exit code if the user is not a sudoer
+            # or if their credentials are not cached. 
+            return False
 # 
 def find_console_scripts(folders_list):
     # parent_folder = get_package_share_directory(PACKAGE_NAME)

@@ -1,4 +1,4 @@
-# RViz Marker Tools for ROS2
+# RViz Marker Publisher
 
 **Robotics and Autonomous Systems Group, Research Engineering Facility, Research Infrastructure** 
 **Queensland University of Technology**
@@ -13,7 +13,7 @@
 
 ## Introduction
 
-The `rviz_marker_publisher` is a ROS2 package and a Python API for drawing markers and pointclouds inside visualization tools such as RViz2.  The objective of the package is to hide away the naunces of creating and publishing different types of marker messages, and to provide value-adding services such as marker caching and refreshing, management of topics, publishers, and custom transforms.
+The `rviz_marker_publisher` is a ROS2 package and Python API for drawing markers and pointclouds inside visualization tools such as RViz2.  The objective of the package is to hide away the naunces of creating and publishing different types of marker messages, and to provide value-adding services such as marker caching and refreshing, management of topics, publishers, and custom transforms.
 
 The package can significantly reduced the development effort in the following use-cases:
 - Real-time scene visualization for system debugging.
@@ -58,8 +58,11 @@ def main():
 - Support deletion of markers, marker arrays and pointclouds.
 - Manage caching of markers and selectively auto-publishing of cached markers, to make them persistence for late-joining subscribers (when the qos durability of the topic is set to VOLATILE).
 - Support custom transformations (`tf`) and optionally connected to the pose of a marker.
-- Provide utilities for updating the pose of markers.
+- Provide utilities for pose updating and animation.
 
+### Table Of Contents
+
+- [Installation Guide](./docs/INSTALL.md)
 
 
 ### Attribution

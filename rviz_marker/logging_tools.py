@@ -16,8 +16,8 @@ import os, logging, time
 import numpy as np
 import pandas as pd
 
-LOGLEVEL_VARNAME = 'ARM_COMMANDER_LOGLEVEL'
-LOGFILE_VARNAME = 'ARM_COMMANDER_LOGFILE'
+LOGLEVEL_VARNAME = 'GLOBAL_LOGLEVEL'
+LOGFILE_VARNAME = 'GLOBAL_LOGFILE'
 
 # -- The custom logger for the task trees package
 class CustomFormatter(logging.Formatter):
@@ -137,11 +137,12 @@ class TimeLogger():
 # the global object to be imported by other modules
 logger = get_logger()
 
-# print messages to remind developers of the environment variables
-logger.info(f'-----------------------------------------------------------------------------------------------------------------------------------------')
-logger.info(f'(logging tool) starts logging for a new process (pid: {os.getpid()}) ')
-logger.info(f'(logging tool) environment variable {LOGLEVEL_VARNAME}: {os.environ.get(LOGLEVEL_VARNAME, "")}')
-logger.info(f'(logging tool) environment variable {LOGFILE_VARNAME}: {os.environ.get(LOGFILE_VARNAME, "")}')
+if __name__ == '__main__':
+    # print messages to remind developers of the environment variables
+    logger.info(f'-----------------------------------------------------------------------------------------------------------------------------------------')
+    logger.info(f'(logging tool) starts logging for a new process (pid: {os.getpid()}) ')
+    logger.info(f'(logging tool) environment variable {LOGLEVEL_VARNAME}: {os.environ.get(LOGLEVEL_VARNAME, "")}')
+    logger.info(f'(logging tool) environment variable {LOGFILE_VARNAME}: {os.environ.get(LOGFILE_VARNAME, "")}')
 
 
 
