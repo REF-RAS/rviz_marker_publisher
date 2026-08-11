@@ -39,10 +39,10 @@ from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
 
-from rviz_marker.pose_tools import list_to_pose, pose_to_xyzq
-from rviz_marker.logging_tools import logger
-from rviz_marker.lock_tools import synchronized
-import rviz_marker.pose_tools as pose_tools
+from rviz_marker_publisher.pose_tools import list_to_pose, pose_to_xyzq
+from rviz_marker_publisher.logging_tools import logger
+from rviz_marker_publisher.lock_tools import synchronized
+import rviz_marker_publisher.pose_tools as pose_tools
 
 class RGBAColors(int, Enum):
     """ Define common use colours for visualization

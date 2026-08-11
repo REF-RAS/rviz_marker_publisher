@@ -20,8 +20,8 @@ from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
 from ament_index_python import get_packages_with_prefixes, get_package_share_directory
 
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -29,7 +29,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
@@ -41,7 +41,7 @@ def main():
     logger.info(f'(add) create_pointcloud_from_image CoralFish.png')
     image_file = os.path.join(get_package_share_directory('rviz_marker_publisher'), 'examples/assets/CoralFish.png')
     image_bgr = cv2.imread(image_file)
-    image_pointcloud2:PointCloud2 = rviz_marker.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
+    image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
     rv.publish(image_pointcloud2)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')

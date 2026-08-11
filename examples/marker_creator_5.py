@@ -18,8 +18,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -27,7 +27,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
@@ -37,7 +37,7 @@ def main():
     time.sleep(2.0) 
     # add a cylinder marker
     logger.info('(add) create_cylinder_marker')
-    cylinder_marker = rviz_marker.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map',
+    cylinder_marker = rviz_marker_publisher.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map',
                                                 scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])
     rv.publish_and_cache(cylinder_marker)
 

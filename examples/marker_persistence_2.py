@@ -19,8 +19,8 @@ from rclpy.qos import  QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSRel
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -32,7 +32,7 @@ def main():
                                         history=QoSHistoryPolicy.KEEP_LAST, depth=50)
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
@@ -45,11 +45,11 @@ def main():
     rv.activate_topic('/visualization_marker_persistent', Marker, qos_profile=qos_profile)
     # add a axis plane marker on xy plane as a marker to the RVizVisualizer
     logger.info('(add) cube_markers 2 times')
-    cube_marker_1 = rviz_marker.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[0, 0, 0, 0.2, 0.2, 0.2], frame_id='map',
+    cube_marker_1 = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[0, 0, 0, 0.2, 0.2, 0.2], frame_id='map',
                                                rgba=[1.0, 0.5, 0.5, 0.5])
     rv.publish(cube_marker_1, topic=PERSISTENT_TOPIC_NAME)
     # add a larger cube marker
-    cube_marker_2 = rviz_marker.create_cube_marker_from_bbox(name='cube', id=2, bbox3d=[1, 1, 0, 1.5, 1.5, 1.0], frame_id='map',
+    cube_marker_2 = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=2, bbox3d=[1, 1, 0, 1.5, 1.5, 1.0], frame_id='map',
                                                rgba=[0.0, 1.0, 0.5, 0.5])
     rv.publish(cube_marker_2, topic=PERSISTENT_TOPIC_NAME)
     # pause before terminate until Enter is press

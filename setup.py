@@ -18,7 +18,7 @@ from setuptools.command.build_py import build_py
 PACKAGE_NAME = 'rviz_marker_publisher'
 INSTALL_REQUIRES = [
     'opencv_contrib_python>=5',
-    'wrapt',
+    'wrapt<2.0.0',
     'pandas'
 ]
 EXTRA_REQUIRES = {
@@ -37,14 +37,15 @@ class UVInstallThenBuild(build_py):
             installer = ['uv', "pip", "install"]
             # add --system flag it is running in a docker container
             if Path('/.dockerenv').is_file():
-                if self.is_sudoer():
+                if self.can_run_sudo():
                     installer.insert(0, 'sudo')
                 installer.append("--system")
             installer = installer + dependencies
         else:  # fallback to pip install
             installer = [sys.executable, "-m", "pip", "install"]
             if Path('/.dockerenv').is_file():
-                if self.is_sudoer():
+                if self.can_run_sudo():
+                    print(f'CAN DO SUDO')
                     installer.insert(0, 'sudo')
                 installer.append("--break-system-packages")
             installer = installer + dependencies
@@ -52,21 +53,21 @@ class UVInstallThenBuild(build_py):
         subprocess.run(installer, check=True)
         super().run()
         
-    def is_sudoer(self) -> bool:
-        """Checks if the current user has sudo privileges without prompting for a password."""
+    def can_run_sudo(self) -> bool:
         try:
-            # -v updates the validation credentials
-            # -n forces non-interactive mode (fails immediately if password is required)
-            subprocess.run(
-                ["sudo", "-v", "-n"], 
-                check=True, 
-                stdout=subprocess.DEVNULL, 
-                stderr=subprocess.DEVNULL
+            # Run sudo validation in non-interactive mode
+            result = subprocess.run(
+                ["sudo", "-v", "-n"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.PIPE,
+                text=True
             )
-            return True
-        except subprocess.CalledProcessError:
-            # The command returns a non-zero exit code if the user is not a sudoer
-            # or if their credentials are not cached. 
+            if result.returncode == 0:
+                return True
+            if "a password is required" in result.stderr.lower():
+                return True
+            return False
+        except FileNotFoundError:
             return False
 # 
 def find_console_scripts(folders_list):

@@ -17,8 +17,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2
 from visualization_msgs.msg import Marker, MarkerArray
 from rosidl_runtime_py.utilities import get_message
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -26,7 +26,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching on the dds layer
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(3.0)

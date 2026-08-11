@@ -18,8 +18,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def create_grid_marker_array(grid_dim:tuple, grid_cell_size:tuple, tile_size:tuple) -> MarkerArray:
@@ -38,12 +38,12 @@ def create_grid_marker_array(grid_dim:tuple, grid_cell_size:tuple, tile_size:tup
     for x in range(grid_dim[0]):
         for y in range(grid_dim[1]):
             xyzrpy=[x * grid_cell_size[0], y * grid_cell_size[1], 0.0, 0, 0, 0]
-            tile = rviz_marker.create_cube_marker_from_xyzrpy('tile', x + y * grid_dim[0], xyzrpy, frame_id='map', 
+            tile = rviz_marker_publisher.create_cube_marker_from_xyzrpy('tile', x + y * grid_dim[0], xyzrpy, frame_id='map', 
                                     scale=[tile_size[0], tile_size[1], tile_size[2]], rgba=[0.0, 0.2, 1.0, 0.5],
                                     lifetime=5.0)
             markers_list.append(tile)
 
-    marker_array = rviz_marker.create_marker_array(markers_list)
+    marker_array = rviz_marker_publisher.create_marker_array(markers_list)
     return marker_array
 
 def main():
@@ -51,7 +51,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)

@@ -16,7 +16,6 @@ build/
 install/
 log/
 develop-eggs/
-dist/
 downloads/
 eggs/
 .eggs/

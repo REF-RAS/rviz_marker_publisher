@@ -31,8 +31,8 @@ The following simple script creates a node and then uses the package `rviz_marke
 ```python
 import rclpy
 from rclpy.node import Node
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher
 
 
 def main():
@@ -40,12 +40,12 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching on the dds layer
     time.sleep(1.0)
 
     # use rviz_marker_publisher to create and publish a sphere to the default topic for markers
-    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
 ```
 

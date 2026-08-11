@@ -18,8 +18,8 @@ from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
 from visualization_msgs.msg import Marker, MarkerArray
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -27,7 +27,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='rviz_cloud')
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
@@ -36,7 +36,7 @@ def main():
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
     logger.info('(add) create_sphere_marker')
-    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', 
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', 
                                                 scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish_and_cache(sphere_marker) 
     # pause before terminate until Enter is press

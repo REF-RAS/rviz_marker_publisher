@@ -17,8 +17,8 @@ from rclpy.node import Node
 from rclpy.duration import Duration
 from geometry_msgs.msg import Pose, Point, Quaternion
 
-import rviz_marker
-from rviz_marker import RvizMarkerPublisher, get_logger
+import rviz_marker_publisher
+from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
@@ -26,7 +26,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     rv = RvizMarkerPublisher(the_node)
-    rviz_marker.spin_in_thread(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
@@ -43,7 +43,7 @@ def main():
     time.sleep(1.0)
     # add a sphere marker as a persistent marker to the RVizVisualizer
     logger.info('(add) create_sphere_marker in the reference frame "workspace"')
-    sphere_marker = rviz_marker.create_sphere_marker(name='sphere', id=1, xyz=[0.0, 0.0, 0.0], frame_id='workspace', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[0.0, 0.0, 0.0], frame_id='workspace', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish_and_cache(sphere_marker) 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
