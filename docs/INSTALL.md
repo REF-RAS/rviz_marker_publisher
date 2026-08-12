@@ -8,7 +8,7 @@
 ![Visualization Topic](https://badgen.net/badge/topic/Visualization/orange?icon=github)
 [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
----
+----
 
 ## Installation Guide
 
@@ -116,6 +116,7 @@ pip install https://github.com/REF-RAS/rviz_marker_publisher/dist/rviz_marker_pu
 
 ```
 
+----
 ## Docker Containers for ROS2 and Moveit2 Environments
 
 The repository includes tools for building ROS2 and Moveit2 docker images and running them as docker compose services/containers.
@@ -240,6 +241,7 @@ Then bring up a new container of the image after the build is completed.
 docker compose up ros2 -d
 ```
 
+----
 ### Developer
 
 Dr Andrew Lui, Senior Research Engineer <br />

@@ -61,6 +61,11 @@ def main():
 - Update the pose of markers and that of the associated transform.
 - Add and delete new topics and configure the QoS of the associated publishers.
 
+## Table of Contents
+
+- [Installation Guide](./docs/INSTALL.md)
+
+
 ### Attribution
 
 If this repository has contributed to your work, the Robotics and Autonomous Systems Group suggests that the following statement is to be added to relevant publications or reports.
