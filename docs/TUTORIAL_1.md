@@ -108,7 +108,7 @@ def main():
     input('Press Enter to terminate')
 ```
 
-The above program will publish the marker once and then wait for the Enter key press before moving on or termination.
+The above example will publish the marker once and then wait for the Enter key press before moving on or termination.
 
 Another publish option is to cache after publishing and the `RvizMarkerPublisher` instance continues to publish cached markers regularly (the default is a 10 second cycle).
 
@@ -122,13 +122,63 @@ Another publish option is to cache after publishing and the `RvizMarkerPublisher
     input('Press Enter to terminate')
 ```
 
+The example script is a node of a ROS2 distributed system that publishes to a ROS2 topic designated for `Markers`. A visualization tool is another node in the same ROS2 distributed system that subscribes to the same topic and displays the marker (see the next section). Usually a short moment is needed for the discovery and matching of publishers and subscribers. The default ROS2 topics used by `RvizMarkerPublisher` are listed in the table below.
+
+| Topic | Message Type                 | QoS | 
+| :----------------   | :------         | :------        |
+| `/visualization_marker` | `visualization_msgs.msg.Marker`    | `LOCAL_TRANSIENT`, `RELIABLE`, `KEEP_LAST` and a queue of 50 |
+| `/visualization_marker_array` | `visualization_msgs.msg.MarkerArray` | `LOCAL_TRANSIENT`, `RELIABLE`, `KEEP_LAST` and a queue of 50 |
+| `/visualization_cloud` | `sensor_msgs.msg.PointCloud2`    | `LOCAL_TRANSIENT`, `RELIABLE`, `KEEP_LAST` and a queue of 50 |
+
+Adding a pause between the instantiation of `RvizMarkerPublisher` and the actual publish may be useful sometimes.  See the example below.
+
+```python
+    ...
+    rv = RvizMarkerPublisher(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)    # return after creating a thread as the executor
+
+    # wait for the discovery and matching of publishers and subscribers 
+    logger.info('(wait) discovery and matching of publishers and subscribers')
+    time.sleep(2.0)
+
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    # publish the marker
+    rv.publish(sphere_marker) 
+    ...
+```
+
+If `rv.publish` is replaced by `rv.publish_and_cache`, the marker is cached and will be published again regularly. A late-joining visualization tool will eventually receive the marker. The pause may be omitted.
+
+Another method to allow late-joining visualization tool to receive the markers published earlier is by defining a new topic with the `LOCAL_TRANSIENT` durability quality-of-service. Note that `RvizMarkerPublisher` is designed to define default topics with the `VOLATILE` durability.
+
+The following example shows how to `activate` a new topic `visualization_marker_persistent` with the `LOCAL_TRANSIENT` durability, and publish the marker on the new topic.
+
+```python
+    ...
+    rv = RvizMarkerPublisher(the_node)
+    rviz_marker_publisher.spin_in_thread(the_node)
+
+    qos_profile = QoSProfile(durability=QoSDurabilityPolicy.TRANSIENT_LOCAL, reliability=QoSReliabilityPolicy.RELIABLE, history=QoSHistoryPolicy.KEEP_LAST, depth=50)
+    ...
+    PERSISTENT_TOPIC_NAME = '/visualization_marker_persistent'
+    rv.activate_topic(PERSISTENT_TOPIC_NAME, Marker, qos_profile=qos_profile)
+    ...
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    rv.publish(sphere_marker, topic=PERSISTENT_TOPIC_NAME)
+```
+The marker will be latched, therefore late-joining subscribers will receive and display the marker.
+
 ### Marker Visualization with RViz2
 
-Launch a visualization tool to view the markers.  RViz2 is a visualization tool that can subscribe to the topics publishing markers and pointclouds and display them.  To launch RViz2, execute the command below.
+A visualization tool is to be launched to view the published markers.  RViz2 is a visualization tool that can subscribe to the topics publishing markers and pointclouds and display them.  To launch RViz2, execute the command below.
 
 ```bash
-rviz2
+rviz2 
 ```
+RViz2 must be setup in order to receive the markers published by the example program.
+
+
+## Creating Markers and PointClouds
 
 
 

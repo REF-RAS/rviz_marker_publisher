@@ -42,7 +42,7 @@ def main():
     time.sleep(2.0) 
     # add a persistent display topic for markers that are supposed to be latched
     PERSISTENT_TOPIC_NAME = '/visualization_marker_persistent'
-    rv.activate_topic('/visualization_marker_persistent', Marker, qos_profile=qos_profile)
+    rv.activate_topic(PERSISTENT_TOPIC_NAME, Marker, qos_profile=qos_profile)
     # add a axis plane marker on xy plane as a marker to the RVizVisualizer
     logger.info('(add) cube_markers 2 times')
     cube_marker_1 = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[0, 0, 0, 0.2, 0.2, 0.2], frame_id='map',

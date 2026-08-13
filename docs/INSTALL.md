@@ -82,7 +82,7 @@ source /opt/ros/jazzy/setup.bash
 cd ${ROS2_WS}
 colcon build --symlink-install --event-handlers console_direct+ 
 ```
-Python scripts do not require compilation.  The `symlink-install` eliminates the need to rebuild your workspace every time you change non-compiled files, saving vast amounts of development time.  It installs links in the `install` folder to the files in the `src` folder, and so updates to Python scripts are reflected in the `install` folder.
+Python scripts do not require compilation.  The `symlink-install` eliminates the need to rebuild your workspace every time you change non-compiled files, saving vast amounts of development time.  It installs links in the `install` folder to the files in the `src` folder, and so updates to the Python scripts in the package are reflected in the `install` folder.
 
 5. Install the ROS Packages (including `rviz_marker_publisher`) in the Workspace.
 
