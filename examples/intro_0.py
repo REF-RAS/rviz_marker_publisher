@@ -14,31 +14,25 @@ __status__ = 'Development'
 import time
 import rclpy
 from rclpy.node import Node
+from visualization_msgs.msg import Marker
 import rviz_marker_publisher
 from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    # section 1: enable ROS2 node and create the RVizVisualizer 
     rclpy.init()
-    the_node = Node(node_name='test_rv_node') 
-    # create the RVizVisualizer 
+    the_node:Node = Node(node_name='test_rv_node') 
     rv = RvizMarkerPublisher(the_node)
     rviz_marker_publisher.spin_in_thread(the_node)
-    # wait for the discovery and matching of publishers and subscribers 
+    # section 2: wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
-    # remove existing markers
-    logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
-    rv.delete_all_objects_by_topics()
-    time.sleep(2.0)   
-    # add a sphere marker as a persistent marker to the RVizVisualizer
-    logger.info('(add) create_sphere_marker and wait for 5 seconds')
-    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+ 
+    # section 3: create a sphere marker and publish it with the RVizVisualizer 
+    logger.info('(add) create_sphere_marker and call publish')
+    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
-    time.sleep(5.0) 
-    # delete the sphere marker
-    logger.info('(delete) delete the sphere')
-    rv.delete_object(sphere_marker)
 
     # pause before terminate until Enter is press
     input('Press Enter to terminate')

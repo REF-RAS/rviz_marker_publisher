@@ -723,11 +723,11 @@ class RvizMarkerPublisher():
         self.force_refresh:bool = False
         # set default values for keyword argument
         self.auto_refresh = config_dict.get('auto_refresh', True)    
-        self.refresh_timer_cycle = config_dict.get('refresh_timer_cycle', 10.0)     
+        self.republish_timer_cycle = config_dict.get('republish_timer_cycle', 10.0)                           # 0.1 Hz  
         self.best_effort_timer_cycle = config_dict.get('best_effort_timer_cycle', 0.01)                       # 100 Hz
         self.tf_refresh_timer_cycle = config_dict.get('tf_refresh_timer_cycle', 0.05)                         # 20 Hz
         logger.info(f'parameter auto_refresh: {self.auto_refresh}')
-        logger.info(f'parameter refresh_timer_cycle: {self.refresh_timer_cycle}')
+        logger.info(f'parameter republish_timer_cycle: {self.republish_timer_cycle}')
         logger.info(f'parameter best_effort_timer_cycle: {self.best_effort_timer_cycle}')
         logger.info(f'parameter tf_refresh_timer_cycle: {self.tf_refresh_timer_cycle}')
 
@@ -746,7 +746,7 @@ class RvizMarkerPublisher():
         # setup timers
         self.timer_tf = self._node.create_timer(self.tf_refresh_timer_cycle, self._cb_timer_tf, callback_group=self.callback_group)
         self.timer_best_effort = self._node.create_timer(self.best_effort_timer_cycle, self._cb_timer_best_effort, callback_group=self.callback_group)
-        self.timer_refresh = self._node.create_timer(self.refresh_timer_cycle, self._cb_timer_refresh, callback_group=self.callback_group)
+        self.timer_refresh = self._node.create_timer(self.republish_timer_cycle, self._cb_timer_refresh, callback_group=self.callback_group)
 
     # internal function to return the RvizObjectModel object model based on the message object
     def _get_object_model(self, the_object:Any) -> RvizObjectModel:
@@ -846,7 +846,7 @@ class RvizMarkerPublisher():
             parent_frame_id = pose.header.frame_id
             pose_stamped = pose
         else:
-            logger.logerr(f'{__class__.__name__}: parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
+            logger.warning(f'(_pub_transform) parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
             raise TypeError(f'A parameter is invalid')
         # create the TransformStamped
         transform_stamp:TransformStamped = pose_tools.pose_stamped_to_transform_stamped(pose_stamped, frame_id)
