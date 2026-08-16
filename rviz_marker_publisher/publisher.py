@@ -199,11 +199,11 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_i
     return the_marker
 
 def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rgba:list=None, lifetime:float=None) -> Marker:
-    """ Creates a marker for displaying a 3D region as a box
+    """ Creates a marker for displaying a 3D box defined by the min xyz and max xyz that aligns with the axes of the reference frame
 
     :param name: the name space of the marker
     :param id: the id of the marker
-    :param bbox3d: a bounding box as a list [min_x, min_y, min_z, max_x, max_y, max_z]
+    :param bbox3d: a bounding box as a 6-list [min_x, min_y, min_z, max_x, max_y, max_z]
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
@@ -218,7 +218,7 @@ def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rg
     return the_marker
 
 def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
-    """ Creates a marker for displaying a 3D region as a box
+    """ Creates a marker for displaying a 3D box defined by both the position (xyz) and orientation (rpy) with respect to the axes of the reference frame
 
     :param name: the name space of the marker
     :param id: the id of the marker

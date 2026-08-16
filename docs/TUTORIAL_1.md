@@ -137,7 +137,7 @@ The function `create_sphere_marker` returns a populated `Marker` object based on
 | `id`                | An integer for identification  | The `name` and `id` together uniquely identify a marker |
 | `xyz`               | The position of the sphere in the frame of reference | A 3-tuple (x, y, z) of `float` values |
 | `frame_id`          | The frame of reference | default to be the __fixed frame__ of the scene |
-| `scale`             | The size of the sphere | a single number of a 3-tuple (lx, ly, lz) indicating the 3-dimensional size |
+| `scale`             | The size of the sphere | a single number or a 3-tuple (lx, ly, lz) indicating the 3-dimensional size |
 | `rgba`              | The color | either a 3-tuple (r, g, b) or 4-tuple (r, g, b, a) of `float` values in the range [0, 1] |
 | `lifetime`          | The marker will remain visible for this number of seconds | default is 0 meaning it will persist indefinitely |
 
@@ -251,13 +251,54 @@ QoSProfile(
 
 A set of functions is provided by the package `rviz_marker_publisher` to simplify building the `Marker`, `MarkerArray` and `PointCloud2` messages.
 
-### Types of Markers
+### Building Markers
 
 The following table summarizes the functions for building different types of `Marker`.
 
 | Type | Function                 | Remarks| 
 | :----------------   | :------         | :------        |
-| Sphere | `visualization_msgs.msg.Marker`    | `VOLATILE`, `RELIABLE`, `KEEP_LAST` and a queue of 50 |
+| Sphere | `create_sphere_marker`    | Display a triaxial ellipsoid if the scale of the three axes are different |
+| Cylinder | `create_cylinder_marker`    |  |
+| Cube | `create_cube_marker_from_bbox`    | Display a 3D box defined by the min xyz and max xyz |
+| Cube | `create_cube_marker_from_xyzrpy`    | Display a 3D box of the given dimension defined by both the position (xyz) and orientation (rpy)|
+| Text | `create_text_marker` |  |
+| Line | `create_line_marker` | Display a line defined by the two end-points (xyz) |
+| Arrow | `create_arrow_marker` | Display a arrow defined by the position (xyz) and orientation (rpy), and the thickness defined by the scale |
+| Path | `create_path_marker` | Display a path defined by lines connected by points in a list |
+| Mesh | `create_mesh_marker` | Display a 3D mesh file at the given URI |
+| AxisPlane | `create_axisplane_marker` | Display a plane of a given length and width that aligns with one of the three axis planes (xy, xz, or yz) |
+
+Markers can be configured by passing parameters.  The following lists the parameters common to all the functions.
+
+| Common function parameters | Definitions                            | Remarks | 
+| :----------------   | :------                              | :------        |
+| `name`              | A string indicating the namespace of the marker | Many visualization tools organize markers of the same namespace into a group for control functions |
+| `id`                | An integer for identification  | The `name` and `id` together uniquely identify a marker |
+| `frame_id`          | The frame of reference | default to be the __fixed frame__ of the scene |
+| `scale`             | The size of the sphere | a single number or a 3-tuple (lx, ly, lz) indicating the 3-dimensional size |
+| `rgba`              | The color | either a 3-tuple (r, g, b) or 4-tuple (r, g, b, a) of `float` values in the range [0, 1] |
+| `lifetime`          | The marker will remain visible for this number of seconds | default is 0 meaning it will persist indefinitely |
+
+Each of the functions and the parameters specific to the functions are discussed below.
+
+#### Sphere: create_sphere_marker
+
+```python
+# the function prototype
+def create_sphere_marker(name:str, id:int, xyz:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) 
+```
+| Common function parameters | Definitions                            | Remarks | 
+| :----------------   | :------                              | :------        |
+| `xyz`               | The position of the sphere in the frame of reference | A 3-tuple (x, y, z) of `float` values |
+
+The following example creates a blue sphere of size 1.0 with zero transparency at the xyz location (0.5, 1.0, 0.0)
+
+```python
+# the function prototype
+create_sphere_marker(name='group_1', id=0, xyz=[0.5, 1.0, 0.0], scale=1.0, rgba=[0.0, 0.0, 1.0, 0.0], lifetime=None) 
+```
+
+
 
 
 create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
@@ -267,7 +308,7 @@ create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scal
 create_arrow_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
 create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
 create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
-create_sphere_marker(name:str, id:int, xyz:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) 
+
 create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
 create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
 create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None)
