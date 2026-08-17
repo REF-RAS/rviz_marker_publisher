@@ -37,10 +37,10 @@ def main():
     time.sleep(2.0) 
     # add a cylinder marker
     logger.info('(add) create_text_marker')
-    text_marker_1 = rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0, 0, 0], frame_id=None, scale=1.0)
+    text_marker_1 = rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', scale=1.0)
     rv.publish(text_marker_1)
     
-    text_marker_2 = rviz_marker_publisher.create_text_marker(name='text', id=2, text='World', xyzrpy=[1.0, 0, 0, 0.0, 0, 3.14], frame_id=None, scale=[1.0, 0.2, 2.0])
+    text_marker_2 = rviz_marker_publisher.create_text_marker(name='text', id=2, text='World', xyzrpy=[1.0, 0, 0], frame_id='map', scale=2.0)
     rv.publish(text_marker_2)    
 
     # pause before terminate until Enter is press

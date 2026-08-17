@@ -55,7 +55,7 @@ def main():
         logger.info(f'(add) create_line_marker, create_sphere_marker (persistent) and create_arrow_marker (lifetime of 5 secs')
         rv.publish_and_cache(line_marker:=rviz_marker_publisher.create_line_marker('line', 1, [1, 0, 0], [0, 0, 1], 'world', 0.05, rgba=[0.0, 1.0, 1.0, 1.0]))
         rv.publish_and_cache(rviz_marker_publisher.create_sphere_marker('sphere', 1, [1, 1, 1], 'world', scale=0.2, rgba=[0.5, 1.0, 1.0, 1.0]))    
-        rv.publish(rviz_marker_publisher.create_arrow_marker('arrow', 1, [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], 'world', scale=1.0, lifetime=Duration(seconds=5.0)))
+        rv.publish(rviz_marker_publisher.create_arrow_marker_from_xyzrpy('arrow', 1, [1.0, 0.0, 0.0, 1.0, 0.0, 0.0], 'world', arrow_length=1.0, lifetime=Duration(seconds=5.0)))
         the_node.get_clock().sleep_for(Duration(seconds=5))
         # delete the line marker
         logger.info(f'(delete) the line')

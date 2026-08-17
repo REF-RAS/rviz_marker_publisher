@@ -159,7 +159,7 @@ def create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
     the_marker_array.markers.append(the_marker) 
     return the_marker_array   
 
-def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
+def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str=None, axes:str='xy', plane_thickness=0.005, 
                              rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a 2D region as a plane
 
@@ -198,7 +198,7 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_i
                                 pose=pose, scale=scale, color=rgba)
     return the_marker
 
-def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rgba:list=None, lifetime:float=None) -> Marker:
+def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=None, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a 3D box defined by the min xyz and max xyz that aligns with the axes of the reference frame
 
     :param name: the name space of the marker
@@ -217,7 +217,7 @@ def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rg
                                 pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a 3D box defined by both the position (xyz) and orientation (rpy) with respect to the axes of the reference frame
 
     :param name: the name space of the marker
@@ -232,25 +232,47 @@ def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, 
     the_marker = _create_marker(name, id, Marker.CUBE, frame_id, lifetime, pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_arrow_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, arrow_length:float=0.5, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying an arrow
 
     :param name: the name space of the marker
     :param id: the id of the marker
     :param xyzrpy: the pose of the arrow as a list of 6
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
-    :param scale: the thickness of the arrow, defaults to 0.5
+    :param arrow_length: the length of the arrow, defaults to 0.5
+    :param arrow_shaft_diameter: the diameter of the arrow shaft, defaults to 0.1
+    :param arrow_head_diameter: the diameter of the arrow head, defaults to 0.1
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
-    if isinstance(scale, numbers.Number):
-        scale = [scale, scale/5.0, scale/15.0]
-    the_marker = _create_marker(name, id, Marker.ARROW, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)    
+    arrow_scale = [arrow_length, arrow_shaft_diameter, arrow_head_diameter]
+    the_marker = _create_marker(name, id, Marker.ARROW, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=arrow_scale, color=rgba)    
     return the_marker
 
-def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
+def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, arrow_head_length:float=0.05, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) -> Marker:
+    """ Creates a marker for displaying an arrow
+
+    :param name: the name space of the marker
+    :param id: the id of the marker
+    :param xyz1: the first point of the arrow
+    :param xyz2: the second point of the arrow
+    :param frame_id: the reference frame, defaults to None (the default fixed_frame)
+    :param arrow_head_length: the length of the arrow head, defaults to 0.05
+    :param arrow_width: the width of the arrow shaft, defaults to 0.1
+    :param arrow_height: the height of the arrow shaft, defaults to 0.1
+    :param rgba: the colour and alpha value, defaults to None
+    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :return: the Marker object
+    """
+    pose = list_to_pose([0, 0, 0, 0, 0, 0])
+    arrow_scale = [arrow_head_length, arrow_shaft_diameter, arrow_head_diameter]
+    the_marker = _create_marker(name, id, Marker.ARROW, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=arrow_scale, color=rgba)    
+    the_marker.points[:] = [Point(x=float(xyz1[0]), y=float(xyz1[1]), z=float(xyz1[2])), Point(x=float(xyz2[0]), y=float(xyz2[1]), z=float(xyz2[2]))]
+    return the_marker
+
+def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a line
 
     :param name: the name space of the marker
@@ -264,12 +286,12 @@ def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str, lin
     :return: the Marker object
     """
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
-    scale = [float(line_width), 1.0, 1.0]
+    scale = [float(line_width), 0, 0]   # the indices 1 and 2 are ignored
     the_marker = _create_marker(name, id, Marker.LINE_STRIP, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     the_marker.points[:] = [Point(x=float(xyz1[0]), y=float(xyz1[1]), z=float(xyz1[2])), Point(x=float(xyz2[0]), y=float(xyz2[1]), z=float(xyz2[2]))]
     return the_marker    
 
-def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
+def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a path of multiple waypoints
 
     :param name: the name space of the marker
@@ -309,7 +331,7 @@ def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:
 
     return the_marker
 
-def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker:
+def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a sphere
 
     :param name: the name space of the marker
@@ -324,7 +346,7 @@ def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=0.2,
     the_marker = _create_marker(name, id, Marker.SPHERE, frame_id=frame_id, lifetime=lifetime, pose=xyzrpy, scale=scale, color=rgba)      
     return the_marker
 
-def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None) -> Marker:
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a cylinder
 
     :param name: the name space of the marker
@@ -343,7 +365,7 @@ def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0
     the_marker = _create_marker(name, id, Marker.CYLINDER, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     return the_marker 
 
-def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a text
 
     :param name: the name space of the marker
@@ -361,7 +383,7 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, sc
     the_marker.text = text
     return the_marker
 
-def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a mesh object
 
     :param name: the name space of the marker

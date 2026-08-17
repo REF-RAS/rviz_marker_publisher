@@ -36,7 +36,7 @@ def main():
     rv.publish_and_cache(sphere_marker) 
     axis_marker = rviz_marker_publisher.create_axisplane_marker(name='work_area', id=2, bbox2d=[-1, -1, 1, 1], offset=0, frame_id='map', axes='xy', rgba=[0.2, 0.2, 1.0])
     rv.publish_and_cache(axis_marker) 
-    arrow_marker = rviz_marker_publisher.create_arrow_marker(name='work_area', id=3, xyzrpy=[1, 1, 1, 0, 3.14, 0], frame_id='map', scale=0.50, rgba=[0.0, 1.0, 0.5, 1.0])
+    arrow_marker = rviz_marker_publisher.create_arrow_marker_from_xyzrpy(name='work_area', id=3, xyzrpy=[1, 1, 1, 0, 3.14, 0], frame_id='map', arrow_length=0.50, rgba=[0.0, 1.0, 0.5, 1.0])
     rv.publish_and_cache(arrow_marker)     
 
     # pause before terminate until Enter is press

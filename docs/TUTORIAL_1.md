@@ -274,9 +274,9 @@ Markers can be configured by passing parameters.  The following lists the parame
 | :----------------   | :------                              | :------        |
 | `name`              | A string indicating the namespace of the marker | Many visualization tools organize markers of the same namespace into a group for control functions |
 | `id`                | An integer for identification  | The `name` and `id` together uniquely identify a marker |
-| `frame_id`          | The frame of reference | default to be the __fixed frame__ of the scene |
+| `frame_id`          | The frame of reference | default to the __fixed frame__ of the scene specified in `RvizMarkerPublisher` | 
 | `scale`             | The size of the sphere | a single number or a 3-tuple (lx, ly, lz) indicating the 3-dimensional size |
-| `rgba`              | The color | either a 3-tuple (r, g, b) or 4-tuple (r, g, b, a) of `float` values in the range [0, 1] |
+| `rgba`              | The color | either a 3-tuple (r, g, b) or 4-tuple (r, g, b, a) of `float` values in the range [0, 1], default to red |
 | `lifetime`          | The marker will remain visible for this number of seconds | default is 0 meaning it will persist indefinitely |
 
 Each of the functions and the parameters specific to the functions are discussed below.
@@ -285,9 +285,9 @@ Each of the functions and the parameters specific to the functions are discussed
 
 ```python
 # the function prototype
-def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) 
+def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=0.2, rgba:list=None, lifetime:float=None) 
 ```
-| Common function parameters | Definitions                   | Acceptable Values | 
+| Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
 | `xyzrpy`            | The position and optionally the orientation of the sphere | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
@@ -314,9 +314,9 @@ rviz_marker_publisher.create_sphere_marker(name='group_1', id=0, xyzrpy=[0.5, 1.
 
 ```python
 # the function prototype
-def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
 ```
-| Common function parameters | Definitions                   | Acceptable Values | 
+| Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
 | `xyzrpy`            | The position and optionally the orientation of the cylinder | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
@@ -330,15 +330,15 @@ The following example creates a green cylinder of base size (0.5 x 0.5) and a he
 rviz_marker_publisher.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map', scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])
 ```
 
-#### Cuboid: create_cube_marker_from_bbox and 
+#### Cuboid: create_cube_marker_from_bbox and create_cube_marker_from_xyzrpy
 
 To specify the geometry of a cube marker, the first way is to specify the minimum and maximum (x, y, z) values.  The size is implicitly defined by the two positions.
 
 ```python
 # the function prototype
-def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rgba:list=None, lifetime:float=None)
+def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=None, rgba:list=None, lifetime:float=None)
 ```
-| Common function parameters | Definitions                   | Acceptable Values | 
+| Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
 | `bbox3d`            | A cube defined by minimum (x, y, z) and the maximum (x, y, z) | A 6-tuple (min_x, min_y, min_z, max_x, max_y, max_z)
  
@@ -351,10 +351,10 @@ The second way is to specify the positions and the orientation of the cube throu
 
 ```python
 # the function prototype
-def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) 
 ```
 
-| Common function parameters | Definitions                   | Acceptable Values | 
+| Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
 | `xyzrpy`            | The position and optionally the orientation of the cuboid | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
@@ -371,19 +371,100 @@ cuboid_marker = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube'
 
 #### Text: create_text_marker
 
+A text marker is always screen-facing.  Its orientation configuration is largely irrelevant.
+
 ```python
 # the function prototype
-def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+```
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyzrpy`            | (x, y, z) is the position of the text and the orientation is largely irrelevant| A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+|                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
+|                     |                                      | A `Pose` object |  
+|                     |                                      | A `PoseStamped` object |  
+| `scale`             | The height of the text               | A single `float` value |
+
+
+The following example creates two red text markers, _Hello_ and _World_, at position (0, 0, 0) and (1, 0, 0) and sizes 1.0 meters and 2.0 meters respectively.
+
+```python
+    text_marker_1 = rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', scale=1.0)
+    
+    text_marker_2 = rviz_marker_publisher.create_text_marker(name='text', id=2, text='World', xyzrpy=[1.0, 0, 0], frame_id='map', scale=2.0)
 ```
 
+#### Line, Arrow, and Path
+
+A path is defined by a list of continous lines defined by successive end positions. 
+
+##### Line: create_line_marker
+
+A line marker is defined by two end positions. 
+
+```python
+# the function prototype
+def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
+```
+
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyz1`              | (x, y, z) is the position of one end of the line| A 3-tuple (x, y, z) |
+| `xyz2`              | (x, y, z) is the position of the other end of the line| A 3-tuple (x, y, z) |
+| `line_width`        | the width of the line | A single `float` |
+
+The following example creates a 0.05 wide orange line between (-2.5, 0, 0) and (-2.5, 1, 0) which will be deleted after 5.0 seconds of display.
+
+```python
+line_marker = rviz_marker_publisher.create_line_marker(name='line', id=i, xyz1=[-2.5, 0, 0], xyz2=[-2.5, 1, 0], frame_id='map', line_width=0.05, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=5.0)
+```
+
+##### Arrow: create_arrow_marker
+
+An arrow may be defined by the pivot position and orientation. The following function creates an arrow marked from a `xyzrpy` list.
+
+```python
+# the function prototype
+def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, arrow_length:float=0.5, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) 
+```
+
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyzrpy`            | The position and orientation of the arrow at its pivot | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+|                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
+|                     |                                      | A `Pose` object |  
+|                     |                                      | A `PoseStamped` object |  
+| `arrow_length`      | The length of the array              | A single `float` value default to 0.5|
+| `arrow_shaft_diameter` | The diameter of the arrow shaft   | A single `float` value default to 0.1 |
+| `arrow_head_diameter`  | The diameter of the arrow head    | A single `float` value default to 0.1 |
+
+An arrow marker may also defined by the two end positions, in a way similar to a line marker
+
+```python
+# the function prototype
+def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, arrow_head_length:float=0.05, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) 
+```
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyz1`              | (x, y, z) is the position of one end of the arrow| A 3-tuple (x, y, z) |
+| `xyz2`              | (x, y, z) is the position of the other end of the larrowine| A 3-tuple (x, y, z) |
+| `arrow_head_length`      | The length of the arrow head            | A single `float` value default to 0.05|
+| `arrow_shaft_diameter` | The diameter of the arrow shaft   | A single `float` value default to 0.1 |
+| `arrow_head_diameter`  | The diameter of the arrow head    | A single `float` value default to 0.1 |
+
+
+
+
+```python
+# the function prototype
+def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
+```
 
 
 create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
                              rgba:list=None, lifetime:float=None)
 
-create_arrow_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
-create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
-create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
+
 
 create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
 
