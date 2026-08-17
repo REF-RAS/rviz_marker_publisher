@@ -11,9 +11,13 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import time
+import os, sys, time
+import cv2
 import rclpy
 from rclpy.node import Node
+from sensor_msgs.msg import PointCloud2, PointField
+from sensor_msgs_py import point_cloud2
+from visualization_msgs.msg import Marker, MarkerArray
 import rviz_marker_publisher
 from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
@@ -30,12 +34,18 @@ def main():
     # remove existing markers
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
-    time.sleep(2.0)  
-    # add sphere markers as a temporary marker to the RVizVisualizer
-    logger.info('(add) create_sphere_marker 5 times')
-    for i in range(5):
-        marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=i, xyzrpy=[1 + i * 0.2, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-        rv.publish(marker)
+    time.sleep(2.0) 
+    # add a cylinder marker
+    logger.info('(add) create_text_marker')
+    text_marker_1 = rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0, 0, 0], frame_id=None, scale=1.0)
+    rv.publish(text_marker_1)
+    
+    text_marker_2 = rviz_marker_publisher.create_text_marker(name='text', id=2, text='World', xyzrpy=[1.0, 0, 0, 0.0, 0, 3.14], frame_id=None, scale=[1.0, 0.2, 2.0])
+    rv.publish(text_marker_2)    
+
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()

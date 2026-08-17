@@ -33,7 +33,7 @@ def main():
     time.sleep(2.0)   
     # add a sphere marker as a persistent marker to the RVizVisualizer
     logger.info('(add) create_sphere_marker and wait for 5 seconds')
-    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
     time.sleep(5.0) 
     # delete the sphere marker

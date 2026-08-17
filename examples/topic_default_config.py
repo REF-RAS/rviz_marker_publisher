@@ -36,7 +36,7 @@ def main():
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
     logger.info('(add) create_sphere_marker')
-    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', 
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', 
                                                 scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish_and_cache(sphere_marker) 
     # pause before terminate until Enter is press

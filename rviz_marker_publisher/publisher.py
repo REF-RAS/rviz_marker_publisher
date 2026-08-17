@@ -309,21 +309,19 @@ def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:
 
     return the_marker
 
-def create_sphere_marker(name:str, id:int, xyz:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker:
+def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a sphere
 
     :param name: the name space of the marker
     :param id: the id of the marker
-    :param xyz: the position of the sphere
+    :param xyzrpy: the position of the sphere
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale of the sphere as a list of 3 scales or a number, defaults to 0.2
     :param rgba: the colour and alpha value, defaults to None
     :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
     :return: the Marker object
     """
-    rpy = [0, 0, 0]
-    pose = list_to_pose(xyz + rpy) 
-    the_marker = _create_marker(name, id, Marker.SPHERE, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)      
+    the_marker = _create_marker(name, id, Marker.SPHERE, frame_id=frame_id, lifetime=lifetime, pose=xyzrpy, scale=scale, color=rgba)      
     return the_marker
 
 def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None) -> Marker:
@@ -579,7 +577,7 @@ class PublishTopicManager():
         return pub
 
     @synchronized
-    def delete_topic(self, topic:str):
+    def delete_topic(self, topic:str) -> None:
         """ Delete the topic and destroy the associated publisher
 
         :meta private:
@@ -782,8 +780,22 @@ class RvizMarkerPublisher():
                 # logger.warning(f'_cb_timer_best_effort: {object_model.pub_time is None or current_time_in_secs > object_model.pub_time} {object_model}')
                 if object_model.pub_time is None or current_time_in_secs > object_model.pub_time:
                     the_object = object_model.the_object
-                    if object_model.update_stamp and isinstance(the_object, (Marker, PointCloud2)):
-                        the_object.header.stamp = current_time.to_msg()
+                    # update the stamp attribute of the message if the flag is True and the message type if Marker or PointCloud2
+                    if isinstance(the_object, (Marker, PointCloud2)):
+                        if object_model.update_stamp:
+                            the_object.header.stamp = current_time.to_msg()
+                        # assign the fixed_frame to the frame_id if it is not defined
+                        if not the_object.header.frame_id:
+                            the_object.header.frame_id = self._fixed_frame
+                    # if the object is an Marker Array, iterate through the markers
+                    else:  # MarkerArray
+                        for marker in the_object.markers:
+                            if object_model.update_stamp:
+                                marker.header.stamp = current_time.to_msg()
+                            # assign the fixed_frame to the frame_id if it is not defined
+                            if not marker.header.frame_id:
+                                marker.header.frame_id = self._fixed_frame                            
+                        
                     the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(object_model.topic)
                     the_publisher.publish(the_object)
                     self.outbox_objects_queue.remove(object_model)
@@ -804,8 +816,21 @@ class RvizMarkerPublisher():
             for cached_object_model in list(self.cached_objects_queue):
                 the_object = cached_object_model.the_object
                 # update the stamp attribute of the message if the flag is True and the message type if Marker or PointCloud2
-                if cached_object_model.update_stamp and isinstance(the_object, (Marker, PointCloud2)):
-                    the_object.header.stamp = current_time.to_msg()
+                if isinstance(the_object, (Marker, PointCloud2)):
+                    if cached_object_model.update_stamp:
+                        the_object.header.stamp = current_time.to_msg()
+                    # assign the fixed_frame to the frame_id if it is not defined
+                    if not the_object.header.frame_id:
+                        the_object.header.frame_id = self._fixed_frame
+                # if the object is an Marker Array, iterate through the markers
+                else:  # MarkerArray
+                    for marker in the_object.markers:
+                        if cached_object_model.update_stamp:
+                            marker.header.stamp = current_time.to_msg()
+                        # assign the fixed_frame to the frame_id if it is not defined
+                        if not marker.header.frame_id:
+                            marker.header.frame_id = self._fixed_frame                   
+                            
                 the_publisher:Publisher = self.topic_manager.get_publisher_of_topic(cached_object_model.topic)
                 the_publisher.publish(the_object)   
 
@@ -834,7 +859,7 @@ class RvizMarkerPublisher():
         :param parent_frame_id: the parent frame from which the pose is defined, ignored if PoseStamped is provided, defaults to None
         :type parent_frame_id: str, optional
         """
-        parent_frame_id = self.base_frame if parent_frame_id is None else parent_frame_id
+        parent_frame_id = self._fixed_frame if parent_frame_id is None else parent_frame_id
         if type(pose) in [list, tuple]:
             pose_stamped = pose_tools.list_to_pose_stamped(pose, parent_frame_id)
         elif type(pose) == Pose:

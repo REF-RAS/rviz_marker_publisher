@@ -93,7 +93,7 @@ def main():
  
     # section 3: create a sphere marker and publish it with the RVizVisualizer 
     logger.info('(add) create_sphere_marker and wait for 5 seconds')
-    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
 
     # pause before terminate until Enter is press
@@ -124,7 +124,7 @@ In section 3 one of the marker creation functions of `rviz_marker_publisher` is 
 
 ```python
     ...
-    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
     ...
 ```
@@ -285,32 +285,108 @@ Each of the functions and the parameters specific to the functions are discussed
 
 ```python
 # the function prototype
-def create_sphere_marker(name:str, id:int, xyz:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) 
+def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=0.2, rgba:list=None, lifetime:float=None) 
 ```
-| Common function parameters | Definitions                            | Remarks | 
+| Common function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyz`               | The position of the sphere in the frame of reference | A 3-tuple (x, y, z) of `float` values |
+| `xyzrpy`            | The position and optionally the orientation of the sphere | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+|                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
+|                     |                                      | A `Pose` object |  
+|                     |                                      | A `PoseStamped` object |  
 
-The following example creates a blue sphere of size 1.0 with zero transparency at the xyz location (0.5, 1.0, 0.0)
+
+The following example creates a blue sphere of size 1.0 with zero transparency at the xyz location (0.5, 1.0, 0.0). The orientation is irrelevant for a sphere.
+
+```python
+rviz_marker_publisher.create_sphere_marker(name='group_1', id=0, xyzrpy=[0.5, 1.0, 0.0], scale=1.0, rgba=[0.0, 0.0, 1.0, 0.0], lifetime=None) 
+```
+To create a triaxial ellipsoid, pass a 3-list to the parameter `scale` and optionally pass the orientation of the ellipsoid.
+```python
+rviz_marker_publisher.create_sphere_marker(name='group_1', id=0, xyzrpy=[0.5, 1.0, 0.0, 3.14, 0, 0], scale=[1.0, 0.5, 0.2], rgba=[0.0, 0.0, 1.0, 0.0], lifetime=None) 
+```
+
+Use the `lifetime` parameter to display the marker for a specific duration, for example, 2 seconds.  
+```python
+rviz_marker_publisher.create_sphere_marker(name='group_1', id=0, xyzrpy=[0.5, 1.0, 0.0], scale=1.0, rgba=[0.0, 0.0, 1.0, 0.0], lifetime=2.0) 
+```
+
+#### Cylinder: create_cylinder_marker
 
 ```python
 # the function prototype
-create_sphere_marker(name='group_1', id=0, xyz=[0.5, 1.0, 0.0], scale=1.0, rgba=[0.0, 0.0, 1.0, 0.0], lifetime=None) 
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
+```
+| Common function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyzrpy`            | The position and optionally the orientation of the cylinder | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+|                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
+|                     |                                      | A `Pose` object |  
+|                     |                                      | A `PoseStamped` object |  
+
+
+The following example creates a green cylinder of base size (0.5 x 0.5) and a height of 1.0 with 50% transparency at the xyz location (0.0, 0.5, 0.5) and orientation (0, 0, 0). 
+
+```python
+rviz_marker_publisher.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map', scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])
 ```
 
+#### Cuboid: create_cube_marker_from_bbox and 
+
+To specify the geometry of a cube marker, the first way is to specify the minimum and maximum (x, y, z) values.  The size is implicitly defined by the two positions.
+
+```python
+# the function prototype
+def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rgba:list=None, lifetime:float=None)
+```
+| Common function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `bbox3d`            | A cube defined by minimum (x, y, z) and the maximum (x, y, z) | A 6-tuple (min_x, min_y, min_z, max_x, max_y, max_z)
+ 
+The following example creates a green cube of size (1, 1, 1) at position (0, 0, 0).
+
+```python
+cube_marker = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], rgba=[0.5, 1.0, 0.5, 0.5]) 
+```
+The second way is to specify the positions and the orientation of the cube through the parameter `xyzrpy`, and the size through the paramter`scale`.
+
+```python
+# the function prototype
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+```
+
+| Common function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyzrpy`            | The position and optionally the orientation of the cuboid | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+|                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
+|                     |                                      | A `Pose` object |  
+|                     |                                      | A `PoseStamped` object |  
+| `scale`             | The size of the cuboid | A 3-tuple (x, y, z) indicating the lengths along (x, y, z) axes |
+|                     |                                      | A single value for the same length along (x, y, z) axes |
+
+The following example creates a blue cuboid of size (0.5, 1.0, 1.5) at position (2.0, 2.0, 0.5) and orientation (1.2, 0.0, 1.2).
+
+```python
+cuboid_marker = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
+```
+
+#### Text: create_text_marker
+
+```python
+# the function prototype
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+```
 
 
 
 create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
                              rgba:list=None, lifetime:float=None)
-create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str, rgba:list=None, lifetime:float=None)
-create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+
 create_arrow_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
 create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
 create_path_marker(name:str, id:int, xyzlist:list, frame_id:str, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
 
 create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
-create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+
 create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None)
 
 create_marker_array(markers_list:list[Marker])

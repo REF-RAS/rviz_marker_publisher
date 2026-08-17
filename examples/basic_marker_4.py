@@ -33,7 +33,7 @@ def main():
     time.sleep(2.0)  
     # add a sphere marker as a persistent marker to the RVizVisualizer
     logger.info('(add) create sphere marker with transform (tf_frame="sphere.1") and wait for 2 seconds')
-    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 0.5])
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 0.5])
     rv.publish_and_cache(sphere_marker, pub_tf=True)  # the tf is named 'sphere.1'.
     time.sleep(2.0)  
     # add a cube marker of which the pose is defined in the reference frame of 'sphere.1'

@@ -31,7 +31,7 @@ def main():
  
     # section 3: create a sphere marker and publish it with the RVizVisualizer 
     logger.info('(add) create_sphere_marker and call publish')
-    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyz=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
+    sphere_marker:Marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.50, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 
 
     # pause before terminate until Enter is press

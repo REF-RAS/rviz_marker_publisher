@@ -37,12 +37,12 @@ def main():
     time.sleep(2.0) 
     # add a small cube marker
     logger.info('(add) create_cube_marker_from_xyzrpy 2 times')
-    cuboid_marker_1 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=1, xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map',
+    cuboid_marker_1 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=1, xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', 
                                                 scale=0.5, rgba=[1.0, 0.5, 0.5, 0.5])
     rv.publish_and_cache(cuboid_marker_1)
     # add a larger cube marker
     cuboid_marker_2 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], frame_id='map',
-                                                scale=1.0, rgba=[0.0, 0.5, 1.0, 0.5])
+                                                scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
     rv.publish_and_cache(cuboid_marker_2)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
