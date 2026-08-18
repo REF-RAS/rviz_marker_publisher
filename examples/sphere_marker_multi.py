@@ -19,6 +19,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to use a loop to create a series of sphere markers and publish them through the RvizMarkerPublisher
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
@@ -31,7 +33,7 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0)  
-    # add sphere markers as a temporary marker to the RVizVisualizer
+    # create a series of sphere markers and publish them through the RVizVisualizer
     logger.info('(add) create_sphere_marker 5 times')
     for i in range(5):
         marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=i, xyzrpy=[1 + i * 0.2, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])

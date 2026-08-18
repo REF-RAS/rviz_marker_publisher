@@ -33,7 +33,7 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a cylinder marker
+    # create a cylinder marker, cache it and publish it through RvizMarkerPublisher
     logger.info('(add) create_cylinder_marker')
     cylinder_marker = rviz_marker_publisher.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map',
                                                 scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])

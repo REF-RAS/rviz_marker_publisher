@@ -23,10 +23,12 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to activate new topics for Marker and MarkerArray messages and publish markers to the new topics
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
-    # create the RVizVisualizer 
-    rv = RvizMarkerPublisher(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='rviz_cloud')
+    # create the RVizVisualizer and configure it so that the default pointcloud topic is named /rviz_cloud
+    rv = RvizMarkerPublisher(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='/rviz_cloud')
     rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
@@ -35,6 +37,7 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
+    # create a sphere marker, cache it and publishing it to the default topic now named /rviz_cloud
     logger.info('(add) create_sphere_marker')
     sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', 
                                                 scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])

@@ -19,6 +19,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to create an animation of a sphere marker by updating the marker position and publishing the marker within a loop  
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
@@ -31,7 +33,7 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a sphere marker as a persistent marker to the RVizVisualizer
+    # create a sphere marker and publish it by the RVizVisualizer
     logger.info('(add) create_sphere_marker and wait for 5 seconds')
     sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
     rv.publish(sphere_marker) 

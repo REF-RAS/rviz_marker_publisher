@@ -396,7 +396,6 @@ The following example creates two red text markers, _Hello_ and _World_, at posi
 
 #### Line, Arrow, and Path
 
-A path is defined by a list of continous lines defined by successive end positions. 
 
 ##### Line: create_line_marker
 
@@ -453,12 +452,28 @@ def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=Non
 | `arrow_head_diameter`  | The diameter of the arrow head    | A single `float` value default to 0.1 |
 
 
+##### Path: create_path_marker
 
+A path is defined by a list of sequential positions connected as a continuous line. 
 
 ```python
 # the function prototype
 def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
 ```
+
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `xyzlist`         | A list of positions connected by a continuous line  | A list of 3-tuples (x, y, z) |
+| `line_width`      | The width of the line              | A single `float` value default to 0.01 meters|
+
+The following example defines a path that connects the points defined for the parameter `xyzlist`: (0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), and (1, 0, 0)
+
+```python
+path_marker = rviz_marker_publisher.create_path_marker(name='path', id=1, xyzlist=[(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (1, 0, 0)], frame_id='map',
+                                                line_width=0.05, rgba=[1.0, 0.5, 0.5, 0.5])
+```
+
+
 
 
 create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 

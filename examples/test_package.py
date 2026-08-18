@@ -40,6 +40,8 @@ def find_publishers(node:Node, target_topic:list) -> list[str]:
     return full_node_path
 
 def main():
+    """ Test and verify that the RvizMarkerPublisher is publishing to the topics /visualization_marker and /visualization_cloud
+    """
     rclpy.init()
     logger.info('launch the node "test_node"')
     the_node = Node(node_name='test_node') 
