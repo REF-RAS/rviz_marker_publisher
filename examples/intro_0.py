@@ -20,6 +20,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demo the basic setup of a node using RvizMarkerPublisher to publish a sphere marker
+    """
     # section 1: enable ROS2 node and create the RVizVisualizer 
     rclpy.init()
     the_node:Node = Node(node_name='test_rv_node') 

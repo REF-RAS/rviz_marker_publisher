@@ -11,13 +11,9 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import os, sys, time
-import cv2
+import time
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import PointCloud2, PointField
-from sensor_msgs_py import point_cloud2
-from visualization_msgs.msg import Marker, MarkerArray
 import rviz_marker_publisher
 from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
@@ -34,16 +30,16 @@ def main():
     # remove existing markers
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
-    time.sleep(2.0) 
-    # add a small cube marker
-    logger.info('(add) create_cube_marker_from_xyzrpy 2 times')
-    cuboid_marker_1 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=1, xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', 
-                                                scale=0.5, rgba=[1.0, 0.5, 0.5, 0.5])
-    rv.publish_and_cache(cuboid_marker_1)
-    # add a larger cube marker
-    cuboid_marker_2 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], frame_id='map',
-                                                scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
-    rv.publish_and_cache(cuboid_marker_2)
+    time.sleep(2.0)    
+    # add a sphere marker as a persistent marker to the RVizVisualizer
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.40, rgba=[1.0, 0.5, 0.5, 1.0],
+                                                               lifetime=5.0)
+    rv.publish(sphere_marker)
+    # wait
+    logger.info('waiting for 10 seconds')
+    time.sleep(10.0)
+    # remove existing markers
+    rv.delete_cached_objects_by_topics()   
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

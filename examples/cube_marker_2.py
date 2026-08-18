@@ -23,6 +23,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to create cube markers from position, orientation and scale (size of each side)
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
@@ -35,11 +37,15 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a path marker
-    logger.info('(add) create_path_marker')
-    path_marker = rviz_marker_publisher.create_path_marker(name='path', id=1, xyzlist=[(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (1, 0, 0)], frame_id='map',
-                                                line_width=0.05, rgba=[1.0, 0.5, 0.5, 0.5])
-    rv.publish_and_cache(path_marker)
+    # add a small cube marker
+    logger.info('(add) create_cube_marker_from_xyzrpy 2 times')
+    cuboid_marker_1 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=1, xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', 
+                                                scale=0.5, rgba=[1.0, 0.5, 0.5, 0.5])
+    rv.publish_and_cache(cuboid_marker_1)
+    # add a larger cube marker
+    cuboid_marker_2 = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], frame_id='map',
+                                                scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
+    rv.publish_and_cache(cuboid_marker_2)
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

@@ -23,6 +23,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to create text markers
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
@@ -35,15 +37,14 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a mesh from a stl file
-    # computing the full path of the stl file
-    # teapot_mesh = 'file://' + os.path.join(os.path.dirname(__file__), 'assets/utah_teapot.stl')
-    # teapot_mesh = os.path.join(os.path.dirname(__file__), 'assets/utah_teapot.stl')
-    teapot_mesh = 'package://rviz_marker_publisher/examples/assets/utah_teapot.stl' 
-    logger.info(f'(add) create_mesh_marker from mesh file location {teapot_mesh}')
-    mesh_marker = rviz_marker_publisher.create_mesh_marker(name='teapot', id=1, file_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
-                                     frame_id='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
-    rv.publish(mesh_marker) 
+    # add a cylinder marker
+    logger.info('(add) create_text_marker')
+    text_marker_1 = rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', scale=1.0)
+    rv.publish(text_marker_1)
+    
+    text_marker_2 = rviz_marker_publisher.create_text_marker(name='text', id=2, text='World', xyzrpy=[1.0, 0, 0], frame_id='map', scale=2.0)
+    rv.publish(text_marker_2)    
+
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

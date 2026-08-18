@@ -22,6 +22,9 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ the function queries the rviz node through the RvizMarkerPublisher for the subscription of topics sending Marker,
+        MarkerArray, and PointCloud2 messages
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 

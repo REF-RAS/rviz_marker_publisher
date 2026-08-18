@@ -12,17 +12,15 @@ __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
 import os, sys, time
-import cv2
 import rclpy
 from rclpy.node import Node
-from sensor_msgs.msg import PointCloud2, PointField
-from sensor_msgs_py import point_cloud2
-from visualization_msgs.msg import Marker, MarkerArray
 import rviz_marker_publisher
 from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate the creation of axisplane, which is essentially a very thin and plane-like cube marker. 
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 

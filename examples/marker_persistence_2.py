@@ -24,6 +24,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to create a new topic with QoSProfile to latch published markers so that late-joining subscribers like rviz2 can receive them
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create QuS Profile

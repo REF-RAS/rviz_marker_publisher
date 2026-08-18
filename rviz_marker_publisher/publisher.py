@@ -710,7 +710,7 @@ class RvizMarkerPublisher():
         :param default_marker_topic: the default marker topic for publishing, default to '/visualization_marker'
         :param default_marker_array_topic: the default marker array topic for publishing, default to '/visualization_marker_array'
         :param default_pointcloud_topic: the default pointcloud topic for publishing, default to '/visualization_cloud'        
-        :param refresh_timer_cycle: the cycle period in seconds of executing the refresh publishing task, default to 10.0
+        :param republish_timer_cycle: the cycle period in seconds of executing the refresh publishing task, default to 10.0
         :param best_effort_timer_cycle: the cycle period in seconds of executing the best effort task, default to 0.01
         :param tf_refresh_timer_cycle: the cycle period in seconds of executing the transform tfs publishing task, default to 0.05
         :param auto_refresh: True if auto-refresh of cache message objects by publishing is enabled, default to True 
@@ -1006,7 +1006,7 @@ class RvizMarkerPublisher():
         :param pose: the pose of the transform, which may be coming from the Pose of the Marker object
         :param parent_frame: the parent frame
         :param static_tf: publish this transform to static_tf once  
-        :param static_tf: this transform is linked to a Marker and so the pose is shared
+        :param linked_marker: link this transform to the pose of a Marker and so when the pose of the Marker is updated so is this transform
         """
         if frame_id is None or parent_frame_id is None or pose is None:
             raise AssertionError(f'RvizVisualizer (add_custom_tf): No parameter can be None')

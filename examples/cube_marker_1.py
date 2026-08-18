@@ -11,15 +11,16 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import time
+import os, sys, time
 import rclpy
 from rclpy.node import Node
-from rclpy.duration import Duration
 import rviz_marker_publisher
 from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate how to create cube markers from bounding box defined by minimum (x, y, z) and maximum (x, y, z)
+    """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
@@ -31,12 +32,20 @@ def main():
     # remove existing markers
     logger.info('(reset rviz) remove all in rviz and wait for 2 secs')
     rv.delete_all_objects_by_topics()
-    time.sleep(2.0)  
-    # add line markers as a temporary marker to the RVizVisualizer with a different lifetime
-    logger.info('(add) create_line_marker with lifetime of 5 seconds 10 times (ensure the rviz Marker topic has depth >= 10)')    
-    for i in range(10):
-        rv.publish(rviz_marker_publisher.create_line_marker(name='line', id=i, xyz1=[-2.5 + i * 0.5, 0, 0], xyz2=[-2.5 + i * 0.5, 1, 0], frame_id='map',
-                                                    line_width=0.05, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=Duration(seconds=5))) 
+    time.sleep(2.0) 
+    # add a small cube marker
+    logger.info('(add) create_cube_marker_from_bbox 2 times')
+    cube_marker_1 = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[0, 0, 0, 0.2, 0.2, 0.2], frame_id='map',
+                                               rgba=[1.0, 0.5, 0.5, 0.5])
+    rv.publish_and_cache(cube_marker_1)
+    # add a larger cube marker
+    cube_marker_2 = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=2, bbox3d=[1, 1, 0, 1.5, 1.5, 1.0], frame_id='map',
+                                               rgba=[0.0, 1.0, 0.5, 0.5])
+    rv.publish_and_cache(cube_marker_2)
+
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()

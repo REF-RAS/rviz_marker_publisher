@@ -25,6 +25,8 @@ from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
 
 def main():
+    """ Demonstrate many functionalities of the RvizMarkerPublisher package
+    """
     try:
         rclpy.init()
         the_node = Node(node_name='test_rv_node') 
