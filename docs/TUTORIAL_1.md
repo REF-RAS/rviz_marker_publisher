@@ -291,7 +291,7 @@ def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyzrpy`            | The position and optionally the orientation of the sphere | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+| `xyzrpy`            | The position and optionally the orientation of the sphere | A 3-tuple (x, y, z) with (r, p, y) default to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
 |                     |                                      | A `Pose` object |  
 |                     |                                      | A `PoseStamped` object |  
@@ -323,7 +323,7 @@ def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, sca
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyzrpy`            | The position and optionally the orientation of the cylinder | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+| `xyzrpy`            | The position and optionally the orientation of the cylinder | A 3-tuple (x, y, z) with (r, p, y) default to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
 |                     |                                      | A `Pose` object |  
 |                     |                                      | A `PoseStamped` object |  
@@ -363,7 +363,7 @@ def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=N
 
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyzrpy`            | The position and optionally the orientation of the cuboid | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+| `xyzrpy`            | The position and optionally the orientation of the cuboid | A 3-tuple (x, y, z) with (r, p, y) default to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
 |                     |                                      | A `Pose` object |  
 |                     |                                      | A `PoseStamped` object |  
@@ -388,7 +388,7 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=Non
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyzrpy`            | (x, y, z) is the position of the text and the orientation is largely irrelevant| A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+| `xyzrpy`            | (x, y, z) is the position of the text and the orientation is largely irrelevant| A 3-tuple (x, y, z) with (r, p, y) default to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
 |                     |                                      | A `Pose` object |  
 |                     |                                      | A `PoseStamped` object |  
@@ -440,7 +440,7 @@ def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=
 
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyzrpy`            | The position and orientation of the arrow at its pivot | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+| `xyzrpy`            | The position and orientation of the arrow at its pivot | A 3-tuple (x, y, z) with (r, p, y) default to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
 |                     |                                      | A `Pose` object |  
 |                     |                                      | A `PoseStamped` object |  
@@ -498,7 +498,7 @@ def create_mesh_marker(name:str, id:int, resource_uri:str, xyzrpy:list, frame_id
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
 | `resource_uri`         | The URI to the 3D asset  | URI schemes include `package://`, `file://`, `http://` and `https://` |
-| `xyzrpy`            | The position and orientation of the mesh | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+| `xyzrpy`            | The position and orientation of the mesh | A 3-tuple (x, y, z) with (r, p, y) default to (0, 0, 0) |
 |                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
 |                     |                                      | A `Pose` object |  
 |                     |                                      | A `PoseStamped` object |  
@@ -590,8 +590,8 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
 | :----------------   | :------                              | :------        |
 | `image_bgr`         | A numpy image of the BGR foramt | `np.ndarray`   |
 | `xyz`               | (x, y, z) is the position of the top left hand corner of the image | A 3-list (x, y, z)  |
-| `pixel_physical_size`  | The size of one pixel | A `float` value defaulted to 0.005 meters per pixel or a 3-tuple of floats |
-| `opacity`              | The opacity of the resulting pointcloud | A `float` defaulted to 1.0  |
+| `pixel_physical_size`  | The size of one pixel | A `float` value default to 0.005 meters per pixel or a 3-tuple of floats |
+| `opacity`              | The opacity of the resulting pointcloud | A `float` default to 1.0  |
 | `depth_array`          | Optionally indicating the depth at each pixel, defaults to None | A numpy ndarray of exact the same shape as the image |
 
 The following example shows how to create a `PointCloud2` message from a numpy image.  The `get_package_share_directory` is a function in the `ament_index_python` package that returns the installed resource share folder of the package.  The top-left corner of the image is mapped to (0, 0.5, 0) and the phyiscal size of pixel is 0.002 in the x and y direction and -1 in the z direction.  The z direction setting controls the face-up side of the image.
@@ -666,26 +666,85 @@ The following example shows how to delete a marker by its name and id. Note that
 
 The `RvizMarkerPublisher` instance provides the following functions for updating the pose of markers.
 
-| Type | Function            | Remarks| 
+| Function | Function        | Remarks| 
 | :-------- | :--------      | :------        |
-| Set a new value to any or all of the position and orientation values | `update_marker_xyzrpy` |  |
-| Move by a displacement | `move_marker`  |  |
+| `update_marker_xyzrpy` | Set a new pose in _xyzrpy_ format | A None value at any index will have the current value as default |
+| `move_marker`  | Move the marker by an offset in xyz | A 3-tuple xyz |
 
 ```python
 # function prototypes
 def update_marker_xyzrpy(marker:Marker, xyzrpy:list) -> None:
 def move_marker(marker:Marker, xyz_offset:list) -> None:
 ```
+| Function parameters | Definitions          | Acceptable Values | 
+| :----------------   | :------              | :------        |
+| `marker`          | The marker to be updated | A `Marker` object   |
+| `xyzrpy`          | The new pose in _xyzrpy_ format |  A 6-tuple (x, y, z, r, p, y) |
+| `xyz_offset`      | The displacement from the current position | A 3-tuple (dx, dy, dz) |
+
+The following example shows the use of the function `update_marker_xyzrpy` to update the x and y positions of a sphere marker by a random number generator.  The other values in the pose (in xyzrpy format) remains unchanged.
+
+```python
+    # create a sphere marker at (0, 0, 0) with orientation (0, 0, 0)
+    xyzrpy = [0, 0, 0, 0, 0, 0]
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=xyzrpy, frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    ...
+    for _ in range(100):
+        # randomly generate a new x and y values, all other values are unchanged
+        xyzrpy = [random.uniform(-0.5, 0.5), random.uniform(-0.5, 0.5), None, None, None, None]
+        rviz_marker_publisher.update_marker_xyzrpy(sphere_marker, xyzrpy)
+        rv.publish(sphere_marker) 
+        time.sleep(0.1)
+```
+
+The following example shows the use of the function `move_marker` to move the sphere marker 0.1 meter per timestep back and forth between x = 0.0 and x = 3.0.
+
+```python
+    # create a sphere marker at (0, 0, 0) with orientation (0, 0, 0)
+    xyzrpy = [0, 0, 0, 0, 0, 0]
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=xyzrpy, frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
+    ...
+    dx = 0.1
+    for _ in range(100):
+        pose = sphere_marker.pose
+        dx = -dx if pose.position.x < 0.0 or pose.position.x > 3.0 else dx
+        rviz_marker_publisher.move_marker(sphere_marker, [dx, 0.0, 0.0])
+        rv.publish(sphere_marker) 
+        time.sleep(0.1)
+```
 
 ---
 
 ## Configure the RvizMarkerPublisher instance
 
-Some critical characteristics of publishing objects/markers can be configured through passing parameters to the constructor during instantiation.
+Some critical characteristics of publishing objects/markers by `RvizMarkerPublisher` can be configured through passing parameters to the constructor during instantiation. The following table lists the 
+parameters.
 
+| Constructor parameters | Type       | Optional  | Remarks    | 
+| :----------------   | :------       | :------   | :------    |
+| `node`          | `rclpy.node.Node` | Mandatory |            |
+| `fixed_frame`   | `str`             |  Optional | The fixed frame to serve as the root of the transforms, default to `map` |
+| `callback_group`   | `CallbackGroup`  |  Optional | The callback group used to drive the `RvizMarkerPublisher` instance, default to `ReentrantCallbackGroup` |
+| `default_qos_profile` | `QoSProfile` |  Optional | The profile of the default topics, default to a profile of `VOLATILE`, `RELIABLE`, `KEEP_LAST` |
+| `default_marker_topic` | `str`             |  Optional | The default topic for markers, default to `/visualization_marker` |
+| `default_marker_array_topic`   | `str`             |  Optional | The default topic for marker array, default to `/visualization_marker_array`  |
+| `default_pointcloud_topic`   | `str`             |  Optional | The default topic for pointclouds, default to `/visualization_cloud`  |
+| `refresh_timer_cycle`   | A positive number    |  Optional | The cycle period between successive refresh publish of cached objects, default to 10.0 seconds |
+| `best_effort_timer_cycle`   | A positive number    |  Optional | The cycle period between successive best effort publish, default to 0.01 seconds |
+| `tf_refresh_timer_cycle`   | A positive number    |  Optional | The cycle period between successive broadcast of transform, default to 0.05 seconds |
+| `auto_refresh`   | `bool`    |  Optional | True if the cached objects are refreshed once in a refresh cycle, default to `True` |
 
+### Refresh Cached Objects
 
+The purpose of auto-refresh of cached objects is to publish the objects again regularly, and this is enabled if the `auto_refresh` parameter is `True`.  The publish of cached object can be manually triggered by calling
+the function `publish_cached_objects_now` if auto refresh is disabled.
 
+```python
+# function prototype
+def publish_cached_objects_now(self) -> None
+```
+
+Auto-refresh of cached objects is handy for object pose update and animation.  The 
 
 
 

@@ -711,12 +711,12 @@ class RvizMarkerPublisher():
         :type fixed_frame: str, optional
         :param callback_group: the callback group, defaults to ReentrantCallbackGroup
         :type callback_group: CallbackGroup, optional
-        :param _default_qos_profile: the default QoSProfile to be applied to the default topics and new topics without one specified, defaults to None
-        :type _default_qos_profile: QoSProfile, optional
+        :param default_qos_profile: the default QoSProfile to be applied to the default topics and new topics without one specified, defaults to None
+        :type default_qos_profile: QoSProfile, optional
         :param default_marker_topic: the default marker topic for publishing, default to '/visualization_marker'
         :param default_marker_array_topic: the default marker array topic for publishing, default to '/visualization_marker_array'
         :param default_pointcloud_topic: the default pointcloud topic for publishing, default to '/visualization_cloud'        
-        :param republish_timer_cycle: the cycle period in seconds of executing the refresh publishing task, default to 10.0
+        :param refresh_timer_cycle: the cycle period in seconds of executing the refresh publishing task, default to 10.0
         :param best_effort_timer_cycle: the cycle period in seconds of executing the best effort task, default to 0.01
         :param tf_refresh_timer_cycle: the cycle period in seconds of executing the transform tfs publishing task, default to 0.05
         :param auto_refresh: True if auto-refresh of cache message objects by publishing is enabled, default to True 
@@ -749,11 +749,11 @@ class RvizMarkerPublisher():
         self.force_refresh:bool = False
         # set default values for keyword argument
         self.auto_refresh = config_dict.get('auto_refresh', True)    
-        self.republish_timer_cycle = config_dict.get('republish_timer_cycle', 10.0)                           # 0.1 Hz  
+        self.refresh_timer_cycle = config_dict.get('refresh_timer_cycle', 10.0)                           # 0.1 Hz  
         self.best_effort_timer_cycle = config_dict.get('best_effort_timer_cycle', 0.01)                       # 100 Hz
         self.tf_refresh_timer_cycle = config_dict.get('tf_refresh_timer_cycle', 0.05)                         # 20 Hz
         logger.info(f'parameter auto_refresh: {self.auto_refresh}')
-        logger.info(f'parameter republish_timer_cycle: {self.republish_timer_cycle}')
+        logger.info(f'parameter refresh_timer_cycle: {self.refresh_timer_cycle}')
         logger.info(f'parameter best_effort_timer_cycle: {self.best_effort_timer_cycle}')
         logger.info(f'parameter tf_refresh_timer_cycle: {self.tf_refresh_timer_cycle}')
 
@@ -772,7 +772,7 @@ class RvizMarkerPublisher():
         # setup timers
         self.timer_tf = self._node.create_timer(self.tf_refresh_timer_cycle, self._cb_timer_tf, callback_group=self.callback_group)
         self.timer_best_effort = self._node.create_timer(self.best_effort_timer_cycle, self._cb_timer_best_effort, callback_group=self.callback_group)
-        self.timer_refresh = self._node.create_timer(self.republish_timer_cycle, self._cb_timer_refresh, callback_group=self.callback_group)
+        self.timer_refresh = self._node.create_timer(self.refresh_timer_cycle, self._cb_timer_refresh, callback_group=self.callback_group)
 
     # internal function to return the RvizObjectModel object model based on the message object
     def _get_object_model(self, the_object:Any) -> RvizObjectModel:

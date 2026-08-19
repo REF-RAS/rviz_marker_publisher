@@ -41,7 +41,7 @@ def main():
     # change the pose of the sphere marker in a loop for a basic animation
     logger.info('(animation) move the sphere between x = (0.0, 3.0)')
     dx = 0.1
-    for i in range(100):
+    for _ in range(100):
         pose = sphere_marker.pose
         dx = -dx if pose.position.x < 0.0 or pose.position.x > 3.0 else dx
         rviz_marker_publisher.move_marker(sphere_marker, [dx, 0.0, 0.0])
