@@ -45,7 +45,9 @@ def main():
     time.sleep(2.0)  
     # move the sphere to another location, the cube should follow the sphere to the new location
     logger.info('(move) move_marker_xyz by (-1.0, -1.0, 0.0)')
-    rviz_marker_publisher.move_marker_xyz(sphere_marker, (-1.0, -1.0, 0.0))
+    rviz_marker_publisher.move_marker(sphere_marker, (-1.0, -1.0, 0.0))
+    time.sleep(5.0)
+    
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

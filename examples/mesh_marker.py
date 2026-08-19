@@ -44,7 +44,7 @@ def main():
     teapot_mesh = 'package://rviz_marker_publisher/examples/assets/utah_teapot.stl' 
     # NOTE: the file under examples is included as a package asset as specified in setup.py
     logger.info(f'(add) create_mesh_marker from mesh file location {teapot_mesh}')
-    mesh_marker = rviz_marker_publisher.create_mesh_marker(name='teapot', id=1, file_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
+    mesh_marker = rviz_marker_publisher.create_mesh_marker(name='teapot', id=1, resource_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
                                      frame_id='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
     rv.publish(mesh_marker) 
     # pause before terminate until Enter is press

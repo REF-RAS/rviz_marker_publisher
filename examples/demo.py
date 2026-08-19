@@ -74,7 +74,7 @@ def main():
         # teapot_mesh = os.path.join(os.path.dirname(__file__), 'assets/utah_teapot.stl')
         teapot_mesh = 'package://rviz_marker_publisher/examples/assets/utah_teapot.stl' 
         logger.info(f'(add) create_mesh_marker from mesh file location {teapot_mesh}')
-        mesh_marker = rviz_marker_publisher.create_mesh_marker(name='teapot', id=1, file_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
+        mesh_marker = rviz_marker_publisher.create_mesh_marker(name='teapot', id=1, resource_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
                                         frame_id='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
         rv.publish(mesh_marker) 
         the_node.get_clock().sleep_for(Duration(seconds=5))

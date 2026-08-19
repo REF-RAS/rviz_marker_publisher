@@ -42,7 +42,7 @@ def main():
     for i in range(100):
         pose = sphere_marker.pose
         dx = -dx if pose.position.x < 0.0 or pose.position.x > 3.0 else dx
-        rviz_marker_publisher.move_marker_xyz(sphere_marker, [dx, 0.0, 0.0])
+        rviz_marker_publisher.move_marker(sphere_marker, [dx, 0.0, 0.0])
         time.sleep(0.1)
 
     # pause before terminate until Enter is press

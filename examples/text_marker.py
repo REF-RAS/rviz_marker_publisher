@@ -12,7 +12,6 @@ __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
 import os, sys, time
-import cv2
 import rclpy
 from rclpy.node import Node
 from sensor_msgs.msg import PointCloud2, PointField

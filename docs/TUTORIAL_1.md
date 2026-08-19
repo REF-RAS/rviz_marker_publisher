@@ -247,7 +247,9 @@ QoSProfile(
     rv = RvizMarkerPublisher(the_node, default_qos_profile=qos_profile)
 ```
 
-## Creating Markers and PointClouds
+---
+
+## Creating Marker, MarkerArray, and PointCloud2 Messages
 
 A set of functions is provided by the package `rviz_marker_publisher` to simplify building the `Marker`, `MarkerArray` and `PointCloud2` messages.
 
@@ -285,7 +287,7 @@ Each of the functions and the parameters specific to the functions are discussed
 
 ```python
 # the function prototype
-def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=0.2, rgba:list=None, lifetime:float=None) 
+def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker 
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
@@ -295,7 +297,7 @@ def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale
 |                     |                                      | A `PoseStamped` object |  
 
 
-The following example creates a blue sphere of size 1.0 with zero transparency at the xyz location (0.5, 1.0, 0.0). The orientation is irrelevant for a sphere.
+The following example shows how to create a blue sphere of size 1.0 with zero transparency at the xyz location (0.5, 1.0, 0.0). The orientation is irrelevant for a sphere.
 
 ```python
 rviz_marker_publisher.create_sphere_marker(name='group_1', id=0, xyzrpy=[0.5, 1.0, 0.0], scale=1.0, rgba=[0.0, 0.0, 1.0, 0.0], lifetime=None) 
@@ -310,11 +312,14 @@ Use the `lifetime` parameter to display the marker for a specific duration, for 
 rviz_marker_publisher.create_sphere_marker(name='group_1', id=0, xyzrpy=[0.5, 1.0, 0.0], scale=1.0, rgba=[0.0, 0.0, 1.0, 0.0], lifetime=2.0) 
 ```
 
+Run the example scripts `sphere_marker.py`, `sphere_marker_lifetime.py`, and `sphere_marker_multi.py` for a demonstration.
+
+
 #### Cylinder: create_cylinder_marker
 
 ```python
 # the function prototype
-def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None) -> Marker
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
@@ -324,25 +329,27 @@ def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, sca
 |                     |                                      | A `PoseStamped` object |  
 
 
-The following example creates a green cylinder of base size (0.5 x 0.5) and a height of 1.0 with 50% transparency at the xyz location (0.0, 0.5, 0.5) and orientation (0, 0, 0). 
+The following example shows how to create a green cylinder of base size (0.5 x 0.5) and a height of 1.0 with 50% transparency at the xyz location (0.0, 0.5, 0.5) and orientation (0, 0, 0). 
 
 ```python
 rviz_marker_publisher.create_cylinder_marker(name='path', id=1, xyzrpy=[0, 0.5, 0.5, 0, 0, 0], frame_id='map', scale=[0.5, 0.5, 1.5], rgba=[0.0, 1.0, 0.5, 0.5])
 ```
 
+Run the example script `cylinder_marker.py` for a demonstration.
+
 #### Cuboid: create_cube_marker_from_bbox and create_cube_marker_from_xyzrpy
 
-To specify the geometry of a cube marker, the first way is to specify the minimum and maximum (x, y, z) values.  The size is implicitly defined by the two positions.
+The package provides two ways to specify the geometry of a cube marker, the first way is to specify the minimum and maximum (x, y, z) values.  The size is implicitly defined by the two positions.
 
 ```python
 # the function prototype
-def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=None, rgba:list=None, lifetime:float=None)
+def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=None, rgba:list=None, lifetime:float=None) -> Marker
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
 | `bbox3d`            | A cube defined by minimum (x, y, z) and the maximum (x, y, z) | A 6-tuple (min_x, min_y, min_z, max_x, max_y, max_z)
  
-The following example creates a green cube of size (1, 1, 1) at position (0, 0, 0).
+The following example shows how to create a green cube of size (1, 1, 1) at position (0, 0, 0).
 
 ```python
 cube_marker = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], rgba=[0.5, 1.0, 0.5, 0.5]) 
@@ -351,7 +358,7 @@ The second way is to specify the positions and the orientation of the cube throu
 
 ```python
 # the function prototype
-def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker 
 ```
 
 | Function parameters | Definitions                   | Acceptable Values | 
@@ -363,11 +370,13 @@ def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=N
 | `scale`             | The size of the cuboid | A 3-tuple (x, y, z) indicating the lengths along (x, y, z) axes |
 |                     |                                      | A single value for the same length along (x, y, z) axes |
 
-The following example creates a blue cuboid of size (0.5, 1.0, 1.5) at position (2.0, 2.0, 0.5) and orientation (1.2, 0.0, 1.2).
+The following example shows how to create a blue cuboid of size (0.5, 1.0, 1.5) at position (2.0, 2.0, 0.5) and orientation (1.2, 0.0, 1.2).
 
 ```python
 cuboid_marker = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
 ```
+
+Run the example scripts `cube_marker_1.py` and `cube_marker_2.py` for a demonstration.
 
 #### Text: create_text_marker
 
@@ -375,7 +384,7 @@ A text marker is always screen-facing.  Its orientation configuration is largely
 
 ```python
 # the function prototype
-def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) 
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker 
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
@@ -386,13 +395,15 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=Non
 | `scale`             | The height of the text               | A single `float` value |
 
 
-The following example creates two red text markers, _Hello_ and _World_, at position (0, 0, 0) and (1, 0, 0) and sizes 1.0 meters and 2.0 meters respectively.
+The following example shows how to create two red text markers, _Hello_ and _World_, at position (0, 0, 0) and (1, 0, 0) and sizes 1.0 meters and 2.0 meters respectively.
 
 ```python
     text_marker_1 = rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0, 0, 0], frame_id='map', scale=1.0)
     
     text_marker_2 = rviz_marker_publisher.create_text_marker(name='text', id=2, text='World', xyzrpy=[1.0, 0, 0], frame_id='map', scale=2.0)
 ```
+
+Run the example script `text_marker.py` for a demonstration.
 
 #### Line, Arrow, and Path
 
@@ -403,7 +414,7 @@ A line marker is defined by two end positions.
 
 ```python
 # the function prototype
-def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
+def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker 
 ```
 
 | Function parameters | Definitions                   | Acceptable Values | 
@@ -412,7 +423,7 @@ def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None
 | `xyz2`              | (x, y, z) is the position of the other end of the line| A 3-tuple (x, y, z) |
 | `line_width`        | the width of the line | A single `float` |
 
-The following example creates a 0.05 wide orange line between (-2.5, 0, 0) and (-2.5, 1, 0) which will be deleted after 5.0 seconds of display.
+The following example shows how to create a 0.05 wide orange line between (-2.5, 0, 0) and (-2.5, 1, 0) which will be deleted after 5.0 seconds of display.
 
 ```python
 line_marker = rviz_marker_publisher.create_line_marker(name='line', id=i, xyz1=[-2.5, 0, 0], xyz2=[-2.5, 1, 0], frame_id='map', line_width=0.05, rgba=[1.0, 1.0, 0.0, 1.0], lifetime=5.0)
@@ -424,7 +435,7 @@ An arrow may be defined by the pivot position and orientation. The following fun
 
 ```python
 # the function prototype
-def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, arrow_length:float=0.5, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) 
+def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, arrow_length:float=0.5, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) -> Marker 
 ```
 
 | Function parameters | Definitions                   | Acceptable Values | 
@@ -441,7 +452,7 @@ An arrow marker may also defined by the two end positions, in a way similar to a
 
 ```python
 # the function prototype
-def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, arrow_head_length:float=0.05, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) 
+def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, arrow_head_length:float=0.05, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) -> Marker 
 ```
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
@@ -458,39 +469,225 @@ A path is defined by a list of sequential positions connected as a continuous li
 
 ```python
 # the function prototype
-def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) 
+def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker
 ```
 
 | Function parameters | Definitions                   | Acceptable Values | 
 | :----------------   | :------                              | :------        |
-| `xyzlist`         | A list of positions connected by a continuous line  | A list of 3-tuples (x, y, z) |
+| `xyzlist`         | The list of positions that defines the path of continuous lines  | A list of 3-tuples (x, y, z) |
 | `line_width`      | The width of the line              | A single `float` value default to 0.01 meters|
 
-The following example defines a path that connects the points defined for the parameter `xyzlist`: (0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), and (1, 0, 0)
+The following example shows how to define a path that connects the points defined for the parameter `xyzlist`: (0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), and (1, 0, 0)
 
 ```python
 path_marker = rviz_marker_publisher.create_path_marker(name='path', id=1, xyzlist=[(0, 0, 0), (0, 0, 1), (0, 1, 1), (1, 1, 1), (1, 0, 0)], frame_id='map',
                                                 line_width=0.05, rgba=[1.0, 0.5, 0.5, 0.5])
 ```
 
+Run the example scripts `arrow_marker.py`, `line_marker_multi.py` and `path_marker.py` for a demonstration.
+
+#### Mesh: create_mesh_marker
+
+The function is used to create a mesh marker from a resource URI, such as a file in STL or DAE format.  The actual acceptable formats depends on the visualization tool. 
+
+```python
+# the function prototype
+def create_mesh_marker(name:str, id:int, resource_uri:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker
+```
+
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `resource_uri`         | The URI to the 3D asset  | URI schemes include `package://`, `file://`, `http://` and `https://` |
+| `xyzrpy`            | The position and orientation of the mesh | A 3-tuple (x, y, z) with (r, p, y) defaulted to (0, 0, 0) |
+|                     |                                      | A 6-tuple (x, y, z, r, p, y) |  
+|                     |                                      | A `Pose` object |  
+|                     |                                      | A `PoseStamped` object |  
+
+The following example shows how to create a mesh marker from the resource at `package://rviz_marker_publisher/examples/assets/utah_teapot.stl`, and position the mesh at (-1.0, -1.0, 0.0) with orientation (0, 0, 0) with respect to the fixed frame (`map`), and the size is 0.05 meters along all three axes.  
+
+```python
+teapot_mesh = 'package://rviz_marker_publisher/examples/assets/utah_teapot.stl' 
+
+mesh_marker = rviz_marker_publisher.create_mesh_marker(name='teapot', id=1, resource_uri=teapot_mesh, xyzrpy=[-1.0, -1.0, 0.0, 0, 0, 0], 
+                                    frame_id='map', scale=[0.05, 0.05, 0.05], rgba=[0.5, 1.0, 1.0, 1.0])
+```
+Refer to `setup.py` for how to specify data paths and their target folders for the package installation.
+
+Run the example script `mesh_marker.py` for a demonstration.
+
+#### AxisPlane: create_axisplane_marker
+
+An axisplane is a reference plane aligned with one of the three orientations (XY, XZ, and YZ) and it is useful for visualization of alignment of sensors, scene objects, and tranforms.
+
+```python
+# the function prototype
+def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
+                             rgba:list=None, lifetime:float=None)-> Marker
+```
+
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `bbox2d`         | The minimum and maximum corners | A 4-tuple (min_x, min_y, max_x, and max_y) for the `xy` plane |
+| `offset`            | The offset distance from the plane where z = 0 for the `xy` plane | A single `float` number |
+| `axes`            | The axes that define the plane | A string `xy`, `xz`, or `yz` |
+ 
+The following example shows how to create a reference frame for each of the `xy`, `xz`, or `yz` combinations.  For the `xy` reference plane, the `offset` is the position where the plane is located on the `z` axis.
+
+```python
+    axis_plane_marker_xy = rviz_marker_publisher.create_axisplane_marker(name='axisplane', id=1, bbox2d=[-1, -1, 1, 1], offset=2, 
+                                                               frame_id='map', axes='xy', rgba=[1, 0, 0])
+    rv.publish_and_cache(axis_plane_marker_xy)
+    # add a axis plane marker on xy plane as a marker to the RVizVisualizer
+    axis_plane_marker_xz = rviz_marker_publisher.create_axisplane_marker(name='axisplane', id=2, bbox2d=[-1, -1, 1, 1], offset=2, 
+                                                               frame_id='map', axes='xz', rgba=[0, 1, 0])
+    rv.publish_and_cache(axis_plane_marker_xz)
+    # add a axis plane marker on yz plane as a marker to the RVizVisualizer
+    axis_plane_marker_xz = rviz_marker_publisher.create_axisplane_marker(name='axisplane', id=3, bbox2d=[-1, -1, 1, 1], offset=2, 
+                                                               frame_id='map', axes='yz', rgba=[0, 0, 1])
+    rv.publish_and_cache(axis_plane_marker_xz) 
+```
+
+Run the example scripts `axisplane_marker.py` for a demonstration.
+
+### Building MarkerArray
+
+The package provides one function for creating a `MarkerArray`, by converting a list of `Marker` messages into a `MarkerArray` message.
+
+```python
+# the function prototype
+def create_marker_array(markers_list:list[Marker]) -> MarkerArray
+```
+
+The following example shows the use of a loop to create a grid of 3x3 tiles (cube markers) and append them to a list, and then call the above function to create a `MarkerArray`.
+
+```python
+markers_list:list[Marker] = []
+grid_cell_size = [0.5, 0.5]
+for x in range(3):
+    for y in range(3):
+        xyzrpy=[x * grid_cell_size[0], y * grid_cell_size[1], 0.0, 0, 0, 0]
+        tile = rviz_marker_publisher.create_cube_marker_from_xyzrpy('tile', x + y * 3, xyzrpy, frame_id='map', 
+                                scale=[0.3, 0.3, 0.3], rgba=[0.0, 0.2, 1.0, 0.5],
+                                lifetime=5.0)
+        # append the cube marker (the tile) to the list
+        markers_list.append(tile)
+# convert the list of markers into a marker array
+marker_array = rviz_marker_publisher.create_marker_array(markers_list)
+```
+
+Run the example scripts `marker_array.py` for a demonstration.
+
+### Building PointCloud2
+
+The package provides a function for creating a `PointCloud2` from an image.
+
+```python
+# the function prototype
+def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id:str=None, opacity:float=1.0, depth_array:np.ndarray=None) -> PointCloud2
+```
+
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `image_bgr`         | A numpy image of the BGR foramt | `np.ndarray`   |
+| `xyz`               | (x, y, z) is the position of the top left hand corner of the image | A 3-list (x, y, z)  |
+| `pixel_physical_size`  | The size of one pixel | A `float` value defaulted to 0.005 meters per pixel or a 3-tuple of floats |
+| `opacity`              | The opacity of the resulting pointcloud | A `float` defaulted to 1.0  |
+| `depth_array`          | Optionally indicating the depth at each pixel, defaults to None | A numpy ndarray of exact the same shape as the image |
+
+The following example shows how to create a `PointCloud2` message from a numpy image.  The `get_package_share_directory` is a function in the `ament_index_python` package that returns the installed resource share folder of the package.  The top-left corner of the image is mapped to (0, 0.5, 0) and the phyiscal size of pixel is 0.002 in the x and y direction and -1 in the z direction.  The z direction setting controls the face-up side of the image.
+
+```python
+image_file = os.path.join(get_package_share_directory('rviz_marker_publisher'), 'examples/assets/CoralFish.png')   
+image_bgr = cv2.imread(image_file)
+image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
+```
+
+Run the example scripts `pointcloud_from_image.py` for a demonstration.
+
+### Deleting Marker, MarkerArray, and PointClouds
+
+The `RvizMarkerPublisher` instance provides the following functions for deletion of objects (markers, markerarrays, and pointclouds) published earlier.
+
+| Type | Selector | Function                 | Remarks| 
+| :-------- | :--------   | :------         | :------        |
+| A Specific Marker | Namespace, ID | `delete_marker_by_id`  | Allow only the deletion of a `Marker` |
+| A Specific Object | The Object | `delete_object`    | May delete any of the `Marker`, `MarkerArray`  and `PointCloud2` |
+| Cached Objects | Topic | `delete_cached_objects_by_topics`  | Delete the cached objects that are associated with one of the given topics, default to all the default topics |
+| All Objects | Topic | `delete_all_objects_by_topics`    | Delete all published and cached objects that are associated with one of the given topics, default to all the default topics |
 
 
+```python
+# the function prototypes
+def delete_marker_by_id(self, name:str, id:int) -> None:
+def delete_object(self, the_object:Marker | MarkerArray | PointCloud2):
+def delete_cached_objects_by_topics(self, topics_list:list=None)
+def delete_all_objects_by_topics(self, topics_list:list[str]=None)
+```
 
-create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str, axes:str='xy', plane_thickness=0.005, 
-                             rgba:list=None, lifetime:float=None)
+| Function parameters | Definitions                   | Acceptable Values | 
+| :----------------   | :------                              | :------        |
+| `name`, `id`           | The name and id of the target marker |    |
+| `the_object`           | The object to be deleted | A `Marker`, `MarkerArray`  or `PointCloud2`  |
+| `topics_list`  | The objects published to the topics in the list are to be deleted | Default to the default topics defined in `RvizMarkerPublisher` |
 
+The following example shows how to delete all objects that have been published and cached to the default topics.
 
+```python
+    rv = RvizMarkerPublisher(the_node)
+    ...
+    rv.delete_all_objects_by_topics()
+```
 
-create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None)
+The following example shows how to delete all `MarkerArray` objects that have been published and cached to the topic `/visualization_marker_array`.
 
-create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str, scale:list=0.5, rgba:list=None, lifetime:float=None)
+```python
+    rv = RvizMarkerPublisher(the_node)
+    ...
+    rv.delete_all_objects_by_topics(['/visualization_marker_array'])
+```
 
-create_marker_array(markers_list:list[Marker])
+The following example shows how to delete all the cached `Marker` published to the topic `/rviz_marker`.
 
-create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id=None, opacity=255, depth_array:np.ndarray=None) 
+```python
+    rv = RvizMarkerPublisher(the_node)
+    ...
+    rv.delete_cached_objects_by_topics(['/rviz_marker'])
+```
+
+The following example shows how to delete a marker by its name and id. Note that there is no feedback if the marker does not exist.
+
+```python
+    rv = RvizMarkerPublisher(the_node)
+    ...
+    rv.delete_marker_by_id(name='workarea', id=1)
+```
+
+### Updating the Pose of Markers
+
+The `RvizMarkerPublisher` instance provides the following functions for updating the pose of markers.
+
+| Type | Function            | Remarks| 
+| :-------- | :--------      | :------        |
+| Set a new value to any or all of the position and orientation values | `update_marker_xyzrpy` |  |
+| Move by a displacement | `move_marker`  |  |
+
+```python
+# function prototypes
+def update_marker_xyzrpy(marker:Marker, xyzrpy:list) -> None:
+def move_marker(marker:Marker, xyz_offset:list) -> None:
+```
+
+---
 
 ## Configure the RvizMarkerPublisher instance
- 
+
+Some critical characteristics of publishing objects/markers can be configured through passing parameters to the constructor during instantiation.
+
+
+
+
+
+
 
 
 

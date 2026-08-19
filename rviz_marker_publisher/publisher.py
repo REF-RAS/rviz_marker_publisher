@@ -119,7 +119,7 @@ def _create_marker(name:str, id:int, marker_type:int=None, frame_id:str=None, li
     the_marker.color = ColorRGBA(r=float(color[0]), g=float(color[1]), b=float(color[2]), a=float(color[3]))       
     return the_marker    
     
-def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
+def _create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
     """ Returns a Marker object specified to delete a marker
 
     :param name: the name space of the marker
@@ -130,10 +130,10 @@ def create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
     the_marker = _create_marker(name, id)
     the_marker.action = Marker.DELETE
     if frame_id is not None:
-        the_marker.header.frame_id = frame_id
+        the_marker.header.frame_id = frame_id   # the frame_id is not relevant in DELETE
     return the_marker
     
-def create_delete_all_marker(frame_id:str=None) -> Marker:
+def _create_delete_all_marker(frame_id:str=None) -> Marker:
     """ Returns a Marker object specified to delete all markers
 
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
@@ -142,10 +142,10 @@ def create_delete_all_marker(frame_id:str=None) -> Marker:
     the_marker = Marker()
     the_marker.action = Marker.DELETEALL
     if frame_id is not None:
-        the_marker.header.frame_id = frame_id
+        the_marker.header.frame_id = frame_id  # the frame_id is not relevant in DELETEALL
     return the_marker   
 
-def create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
+def _create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
     """ Returns a Marker object specified to delete all markers
 
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
@@ -155,7 +155,7 @@ def create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
     the_marker = Marker()
     the_marker.action = Marker.DELETEALL
     if frame_id is not None:
-        the_marker.header.frame_id = frame_id
+        the_marker.header.frame_id = frame_id    # the frame_id is not relevant in DELETEALL
     the_marker_array.markers.append(the_marker) 
     return the_marker_array   
 
@@ -383,12 +383,12 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=Non
     the_marker.text = text
     return the_marker
 
-def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_mesh_marker(name:str, id:int, resource_uri:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
     """ Creates a marker for displaying a mesh object
 
     :param name: the name space of the marker
     :param id: the id of the marker
-    :param file_uri: the full path to the file containing a binary STL or DAE file or using protocols such as file://, package://, or http://
+    :param resource_uri: the full path to the resource containing a binary STL or DAE file or using protocols such as file://, package://, or http://
     :param xyzrpy: the pose of the text as a list of 6
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale factor of the mesh object, defaults to [1, 1, 1]
@@ -407,7 +407,7 @@ def create_mesh_marker(name:str, id:int, file_uri:str, xyzrpy:list, frame_id:str
     # except Exception as ex:
     #     logger.warning(f'create_mesh_marker: Invalid model_file for object ({file_uri}): {ex}')
     #     return
-    the_marker.mesh_resource = file_uri
+    the_marker.mesh_resource = resource_uri
     the_marker.mesh_use_embedded_materials = True
     return the_marker
 
@@ -426,14 +426,14 @@ def create_marker_array(markers_list:list[Marker]) -> MarkerArray:
                 marker_array.markers.append(marker)
     return marker_array
 
-def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id=None, opacity=255, depth_array:np.ndarray=None) -> PointCloud2:
+def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id:str=None, opacity:float=1.0, depth_array:np.ndarray=None) -> PointCloud2:
     """ Create a PointCloud2 for displaying a OpenCV image (color or greyscale) 
 
     :param image_bgr: the image to be displayed, type numpy ndarray
     :param xyz: the position of the bottom left hand corner of the image, defaults to (0, 0, 0)
     :param pixel_physical_size: the length of each pixel in x, y, defaults to [0.005, 0.005], and optionally the third value in the list for z scaling factor
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
-    :param opacity: the opacity of the displayed image, defaults to 255
+    :param opacity: the opacity of the displayed image, defaults to 1.0
     :param depth_array: optionally a numpy ndarray of exact the same shape as the image indicating the depth, defaults to None
     :return: the PointCloud2 object
     """
@@ -487,12 +487,14 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
         r = np.asarray(np.reshape(image_bgr[:, :, 2], num_pixels), dtype=np.uint32)
         g = np.asarray(np.reshape(image_bgr[:, :, 1], num_pixels), dtype=np.uint32)
         b = np.asarray(np.reshape(image_bgr[:, :, 0], num_pixels), dtype=np.uint32)   
+        opacity = min(255, int(opacity * 255))
         cloud_data['rgb'] = np.array((opacity << 24) | (r << 16) | (g << 8) | (b << 0), dtype=np.uint32) 
-    # create a PointCloud2 message using the data
+    # convert numpy array to a list of N lists, each of which is a 4-list (x, y, z, intensity/rgba), and N is the number of points
     cloud_point_list = cloud_data.tolist()
+    # create a PointCloud2 message using the data
     return point_cloud2.create_cloud(Header(frame_id = frame_id), fields, cloud_point_list)
 
-def create_empty_pointcloud(frame_id:str=None) -> PointCloud2:
+def _create_empty_pointcloud(frame_id:str=None) -> PointCloud2:
     """ Create an empty pointcloud, which may be populated with data or used as a message to clear the existing pointcloud
 
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
@@ -505,7 +507,11 @@ def create_empty_pointcloud(frame_id:str=None) -> PointCloud2:
         PointField(name='y', offset=4, datatype=PointField.FLOAT32, count=1),
         PointField(name='z', offset=8, datatype=PointField.FLOAT32, count=1),
     ]
-    return point_cloud2.create_cloud(Header(frame_id=frame_id), fields, [])
+    if frame_id is not None:
+        header = Header(frame_id=frame_id)
+    else:
+        header = Header()
+    return point_cloud2.create_cloud(header, fields, [])
 
 def update_marker_xyzrpy(marker:Marker, xyzrpy:list) -> None:
     """ Update the pose of a marker by a xyyrpy list
@@ -522,7 +528,7 @@ def update_marker_xyzrpy(marker:Marker, xyzrpy:list) -> None:
             xyzrpy[index] = pose_xyzrpy[index]
     marker.pose = list_to_pose(xyzrpy) 
 
-def move_marker_xyz(marker:Marker, xyz_offset:list) -> None:
+def move_marker(marker:Marker, xyz_offset:list) -> None:
     """ Update the position of a marker by the given position offset as a 3-tuple [dx, dy, dz]
 
     :param marker: the Marker object of which the pose is to be udpated
@@ -1017,7 +1023,11 @@ class RvizMarkerPublisher():
         else:
             self.tfs_dict[frame_id] = RvizCustomTFModel(static_tf=static_tf, frame_id=frame_id, parent_frame_id=parent_frame_id, pose=pose, pose_linked_marker=False)
         
-    def delete_object(self, the_object:Marker | MarkerArray | PointCloud2):
+    def delete_marker_by_id(self, name:str, id:int) -> None:
+        the_object:Marker = _create_delete_marker(name=name, id=id)
+        self.publish(the_object, delay=0.0)
+
+    def delete_object(self, the_object:Marker | MarkerArray | PointCloud2) -> None:
         """ delete the object from the visualization
 
         :param the_object: the object
@@ -1060,21 +1070,21 @@ class RvizMarkerPublisher():
         assert isinstance(the_object, (MarkerArray)), 'invalid arameter (the_object): must be a MarkerArray'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         if object_model is not None:
-            self.publish(create_delete_all_marker_array(), object_model.topic, delay=0.0)
+            self.publish(_create_delete_all_marker_array(), object_model.topic, delay=0.0)
         else:
             if the_object.markers is not None and len(the_object.markers) > 0:
-                self.publish(create_delete_all_marker_array(), delay=0.0)
+                self.publish(_create_delete_all_marker_array(), delay=0.0)
 
     # internal function to create empty pointcloud message for pointcloud deletion 
     def _delete_pointcloud(self, the_object:PointCloud2):
         assert isinstance(the_object, (PointCloud2)), 'invalid arameter (the_object): must be a PointCloud'
         object_model:RvizObjectModel = self._get_object_model(the_object)
         if object_model is not None:
-            self.publish(create_empty_pointcloud(), object_model.topic, delay=0.0)   
+            self.publish(_create_empty_pointcloud(), object_model.topic, delay=0.0)   
         else:
-            self.publish(create_empty_pointcloud(), delay=0.0)     
+            self.publish(_create_empty_pointcloud(), delay=0.0)     
             
-    def delete_cached_objects_by_topics(self, topics_list:list=None):
+    def delete_cached_objects_by_topics(self, topics_list:list=None) -> None:
         """ delete all objects from rviz, optionally only the topics in the topics_list
 
         :param topics_list: the topics included, defaults to None (all default topics)
@@ -1093,7 +1103,7 @@ class RvizMarkerPublisher():
                 if object_model.topic in topics_list:
                     self.delete_object(object_model.the_object)
 
-    def delete_all_objects_by_topics(self, topics_list:list[str]=None, frame_id:str=None):
+    def delete_all_objects_by_topics(self, topics_list:list[str]=None) -> None:
         """ attempt to clear old objects by sending DELETE_ALL messages to the topics
 
         :param topics_list: the list of topics to send DELETE_ALL messages, defaults to None (the default topics)
@@ -1106,19 +1116,21 @@ class RvizMarkerPublisher():
         elif isinstance(topics_list, str):
             topics_list = [topics_list]
         assert isinstance(topics_list, (list, tuple)), 'invalid parameter type (topics_list): must be a str, a list of str, or None'
-        # set default frame_id if needed
-        frame_id = self._fixed_frame if frame_id is None else frame_id
+        
+        # first delete the cached objects
+        self.delete_cached_objects_by_topics(topics_list)
+        
         # iterate through the topics_list
         for topic in topics_list:
             message_cls = self.topic_manager.get_message_cls_of_topic(topic)
             if message_cls is None:
                 continue
             if message_cls == Marker:
-                self.publish(create_delete_all_marker(frame_id=frame_id), topic, update_stamp=True)
+                self.publish(_create_delete_all_marker(), topic, update_stamp=True)
             elif message_cls == MarkerArray:
-                self.publish(create_delete_all_marker_array(frame_id=frame_id), topic, update_stamp=False)
+                self.publish(_create_delete_all_marker_array(), topic, update_stamp=False)
             elif message_cls == PointCloud2:
-                self.publish(create_empty_pointcloud(frame_id=frame_id), topic, update_stamp=False)
+                self.publish(_create_empty_pointcloud(), topic, update_stamp=False)
 
     def audit_rviz_subscriptions(self) -> dict[str, list] | None:
         """ audit the rviz node and query the topic subscription
