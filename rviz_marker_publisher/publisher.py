@@ -713,12 +713,12 @@ class RvizMarkerPublisher():
         :type callback_group: CallbackGroup, optional
         :param default_qos_profile: the default QoSProfile to be applied to the default topics and new topics without one specified, defaults to None
         :type default_qos_profile: QoSProfile, optional
-        :param default_marker_topic: the default marker topic for publishing, default to '/visualization_marker'
-        :param default_marker_array_topic: the default marker array topic for publishing, default to '/visualization_marker_array'
-        :param default_pointcloud_topic: the default pointcloud topic for publishing, default to '/visualization_cloud'        
-        :param refresh_timer_cycle: the cycle period in seconds of executing the refresh publishing task, default to 10.0
-        :param best_effort_timer_cycle: the cycle period in seconds of executing the best effort task, default to 0.01
-        :param tf_refresh_timer_cycle: the cycle period in seconds of executing the transform tfs publishing task, default to 0.05
+        :param default_marker_topic: the default marker topic for publishing, default to 'visualization_marker'
+        :param default_marker_array_topic: the default marker array topic for publishing, default to 'visualization_marker_array'
+        :param default_pointcloud_topic: the default pointcloud topic for publishing, default to 'visualization_cloud'        
+        :param refresh_timer_rate: the rate of executing the refresh publishing task, default to 0.1 Hz
+        :param best_effort_timer_rate: the rate of executing the best effort task, default to 100 Hz
+        :param tf_refresh_timer_rate: the rate of executing the transform tfs publishing task, default to 20 Hz
         :param auto_refresh: True if auto-refresh of cache message objects by publishing is enabled, default to True 
         """
 
@@ -735,9 +735,9 @@ class RvizMarkerPublisher():
         # create topic manager
         self.topic_manager = PublishTopicManager(self._node, self._default_qos_profile)
         # set default topics of the three message classes and add the to the topic manager
-        self.default_marker_topic = config_dict.get('default_marker_topic', '/visualization_marker')
-        self.default_marker_array_topic = config_dict.get('default_marker_array_topic', '/visualization_marker_array')
-        self.default_pointcloud_topic = config_dict.get('default_pointcloud_topic', '/visualization_cloud')
+        self.default_marker_topic = config_dict.get('default_marker_topic', 'visualization_marker')
+        self.default_marker_array_topic = config_dict.get('default_marker_array_topic', 'visualization_marker_array')
+        self.default_pointcloud_topic = config_dict.get('default_pointcloud_topic', 'visualization_cloud')
         self.topic_manager.add_topic_of_message_class(self.default_marker_topic, Marker)
         self.topic_manager.add_topic_of_message_class(self.default_marker_array_topic, MarkerArray)
         self.topic_manager.add_topic_of_message_class(self.default_pointcloud_topic, PointCloud2)
@@ -749,13 +749,14 @@ class RvizMarkerPublisher():
         self.force_refresh:bool = False
         # set default values for keyword argument
         self.auto_refresh = config_dict.get('auto_refresh', True)    
-        self.refresh_timer_cycle = config_dict.get('refresh_timer_cycle', 10.0)                           # 0.1 Hz  
-        self.best_effort_timer_cycle = config_dict.get('best_effort_timer_cycle', 0.01)                       # 100 Hz
-        self.tf_refresh_timer_cycle = config_dict.get('tf_refresh_timer_cycle', 0.05)                         # 20 Hz
+        self.refresh_timer_rate = config_dict.get('refresh_timer_rate', 0.1)                           # 0.1 Hz  
+        self.best_effort_timer_rate = config_dict.get('best_effort_timer_rate', 100)                   # 100 Hz
+        self.tf_refresh_timer_rate = config_dict.get('tf_refresh_timer_rate', 20)                      # 20 Hz           
+        # 20 Hz
         logger.info(f'parameter auto_refresh: {self.auto_refresh}')
-        logger.info(f'parameter refresh_timer_cycle: {self.refresh_timer_cycle}')
-        logger.info(f'parameter best_effort_timer_cycle: {self.best_effort_timer_cycle}')
-        logger.info(f'parameter tf_refresh_timer_cycle: {self.tf_refresh_timer_cycle}')
+        logger.info(f'parameter refresh_timer_rate: {self.refresh_timer_rate} Hz')
+        logger.info(f'parameter best_effort_timer_rate: {self.best_effort_timer_rate} Hz')
+        logger.info(f'parameter tf_refresh_timer_rate: {self.tf_refresh_timer_rate} Hz')
 
         # the storage for markers
         # cached_objects are to be refreshed regularly if auto-refresh is true
@@ -770,9 +771,9 @@ class RvizMarkerPublisher():
         self.tfs_dict = defaultdict(lambda: None)                                     # frame_name -> dict
      
         # setup timers
-        self.timer_tf = self._node.create_timer(self.tf_refresh_timer_cycle, self._cb_timer_tf, callback_group=self.callback_group)
-        self.timer_best_effort = self._node.create_timer(self.best_effort_timer_cycle, self._cb_timer_best_effort, callback_group=self.callback_group)
-        self.timer_refresh = self._node.create_timer(self.refresh_timer_cycle, self._cb_timer_refresh, callback_group=self.callback_group)
+        self.timer_refresh = self._node.create_timer(1.0 / self.refresh_timer_rate, self._cb_timer_refresh, callback_group=self.callback_group)
+        self.timer_best_effort = self._node.create_timer(1.0 / self.best_effort_timer_rate, self._cb_timer_best_effort, callback_group=self.callback_group)
+        self.timer_tf = self._node.create_timer(1.0 / self.tf_refresh_timer_rate, self._cb_timer_tf, callback_group=self.callback_group)
 
     # internal function to return the RvizObjectModel object model based on the message object
     def _get_object_model(self, the_object:Any) -> RvizObjectModel:
@@ -931,6 +932,7 @@ class RvizMarkerPublisher():
         :type message_cls: type
         :param qos_profile: the QoSProfile of the publisher, defaults to None (the default QoSProfile)
         :type qos_profile: QoSProfile, optional
+        :raises ValueError: the topic is already used
         """
         qos_profile = self._default_qos_profile if qos_profile is None else qos_profile
         self.topic_manager.add_topic_of_message_class(topic, message_cls, qos_profile)

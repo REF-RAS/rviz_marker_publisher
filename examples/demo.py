@@ -43,11 +43,11 @@ def main():
         # start the demo
         logger.info(f'(create frame) world')
         the_pose:Pose = Pose()
-        the_pose.position = Point(x=0.0, y=0.0, z=0.0)
+        the_pose.position = Point(x=0.5, y=0.5, z=0.0)
         the_pose.orientation = Quaternion(x=.0, y=.0, z=.0, q=1.)
         # create world frame
         rv.publish_custom_tf('world', 'map', the_pose)
-
+        time.sleep(1.0)
         # adding text markers
         logger.info(f'(add) create_text_markers Hello and World')
         text_marker_1 = rv.publish_and_cache(rviz_marker_publisher.create_text_marker(name='text', id=1, text='Hello', xyzrpy=[0, 0, 0, 0.2, 0, 0], frame_id='world', scale=0.3), pub_tf=True)

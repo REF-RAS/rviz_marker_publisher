@@ -53,8 +53,12 @@ def main():
     rv = RvizMarkerPublisher(the_node)
     rviz_marker_publisher.spin_in_thread(the_node)
     # activate topics
-    rv.activate_topic('/rviz_marker', Marker)
-    rv.activate_topic('/rviz_marker_array', MarkerArray)
+    try:
+        rv.activate_topic('rviz_marker', Marker)
+        rv.activate_topic('rviz_marker_array', MarkerArray)
+    except ValueError:
+        logger.error(f'The topic is already used in RvizMarkerPublisher')
+        sys.exit(1)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')
     time.sleep(2.0)
@@ -65,15 +69,15 @@ def main():
     logger.info('(add) create_sphere_marker and publish it to the topic /rviz_marker')
     sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', 
                                                 scale=0.20, rgba=[1.0, 0.5, 0.5, 1.0])
-    rv.publish_and_cache(sphere_marker, topic='/rviz_marker')
+    rv.publish_and_cache(sphere_marker, topic='rviz_marker')
     # add a marker array of 9x3 cubes with lifetime of 5.0 seconds
-    logger.info('(add) create_marker_array of a 9x3 thin cubes with lifetime of 5 secs and publish to /rviz_marker_array')
+    logger.info('(add) create_marker_array of a 9x3 thin cubes with lifetime of 5 secs and publish to rviz_marker_array')
     marker_array = create_grid_marker_array((9, 3), (0.5, 0.5), (0.46, 0.46, 0.01))
-    rv.publish(marker_array, topic='/rviz_marker_array')
+    rv.publish(marker_array, topic='rviz_marker_array')
     time.sleep(10.0)
     # delete the objects from the new topics
-    logger.info('(delete) delete_objects_of_topics "/rviz_marker" and "/rviz_marker_array"')
-    rv.delete_cached_objects_by_topics(['/rviz_marker', '/rviz_marker_array'])
+    logger.info('(delete) delete_objects_of_topics "rviz_marker" and "rviz_marker_array"')
+    rv.delete_cached_objects_by_topics(['rviz_marker', 'rviz_marker_array'])
     # pause before terminate until Enter is press
     input('Press Enter to terminate')
     rclpy.shutdown()

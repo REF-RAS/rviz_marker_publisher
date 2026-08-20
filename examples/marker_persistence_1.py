@@ -30,7 +30,7 @@ def main():
     the_node = Node(node_name='test_rv_node') 
     # create the RVizVisualizer 
     # NOTE: specify a higher refresh cycle so that cached markers are published regularly for late-joining subscribers to capture even if Durability is VOLATILE
-    rv = RvizMarkerPublisher(the_node, refresh_timer_cycle=1.0)
+    rv = RvizMarkerPublisher(the_node, refresh_timer_rate=1.0)
     rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')

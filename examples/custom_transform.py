@@ -35,7 +35,7 @@ def main():
     logger.info('(reset rviz) remove all in rviz and wait for 5 secs')
     rv.delete_all_objects_by_topics()
     time.sleep(2.0) 
-    # add a custom transform called 'workspace'
+    # add a custom frame called 'workspace' from the parent frame 'map'
     transform_pose = Pose()
     transform_pose.position = Point(x=1.0, y=1.0, z=1.0)
     transform_pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, q=1.0)

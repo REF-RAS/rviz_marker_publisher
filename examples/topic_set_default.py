@@ -27,8 +27,8 @@ def main():
     """
     rclpy.init()
     the_node = Node(node_name='test_rv_node') 
-    # create the RVizVisualizer and configure it so that the default pointcloud topic is named /rviz_cloud
-    rv = RvizMarkerPublisher(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='/rviz_cloud')
+    # create the RVizVisualizer and configure it so that the default pointcloud topic is named rviz_cloud
+    rv = RvizMarkerPublisher(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='rviz_cloud')
     rviz_marker_publisher.spin_in_thread(the_node)
     # wait for the discovery and matching of publishers and subscribers 
     logger.info('(wait) discovery and matching of publishers and subscribers')

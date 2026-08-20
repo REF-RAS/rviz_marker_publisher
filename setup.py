@@ -17,8 +17,10 @@ from setuptools.command.build_py import build_py
 
 PACKAGE_NAME = 'rviz_marker_publisher'
 INSTALL_REQUIRES = [
-    'opencv_contrib_python>=5',
+    # 'opencv_contrib_python>=5',
+    'opencv_python',
     'wrapt<2.0.0',
+    'numpy<=2',
     'pandas'
 ]
 EXTRA_REQUIRES = {
@@ -69,7 +71,8 @@ class UVInstallThenBuild(build_py):
             return False
         except FileNotFoundError:
             return False
-# 
+
+
 def find_console_scripts(folders_list):
     # parent_folder = get_package_share_directory(PACKAGE_NAME)
     if isinstance(folders_list, str):
@@ -89,6 +92,7 @@ def find_console_scripts(folders_list):
                     script_name = file[:-3]
                     scripts.append(f'{script_name} = {module_path}:main')
     return scripts
+
 
 setup(
     name=PACKAGE_NAME,

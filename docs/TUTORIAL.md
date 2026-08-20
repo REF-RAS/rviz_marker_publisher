@@ -6,11 +6,29 @@
 ![QUT REF Collection](https://badgen.net/badge/collections/QUT%20REF-RAS?icon=github) 
 ![ROS2 Package Category](https://badgen.net/badge/category/ROS1%20Package/purple?icon=github)
 ![Visualization Topic](https://badgen.net/badge/topic/Visualization/orange?icon=github)
-[![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+[![License: BSD NON-AI](https://badgen.net/badge/license/BSD-3%20NON-AI?icon=github)](https://github.com/non-ai-licenses/non-ai-licenses/blob/main/NON-AI-BSD3)
 
 ----
 
-## Prerequisites
+## Links to Sections
+
+- [Introduction](#introduction)
+- [Prerequisites for Running the Example Programs](#prerequisites-for-running-the-example-programs)
+- [The First Example](#the-first-example)
+- [Persistence of Markers](#persistence-of-markers)
+- [The Default Topics](#the-default-topics)
+- [Creating Marker, MarkerArray, and PointCloud2 Objects](#creating-marker-markerarray-and-pointcloud2-objects)
+- [Marker-Linked Transforms and Custom Transforms](#marker-linked-transforms-and-custom-transforms)
+- [Configure the RvizMarkerPublisher Instance](#configure-the-rvizmarkerpublisher-instance)
+
+----
+## Introduction
+
+The aim of this tutorial is to guide users on the use of _RViz Marker Publisher_ package for implementing scene visualization of a ROS2 application. 
+The package supports three types of objects supported in the visualization framework of ROS2, including `Marker`, `MarkerArray`, and `PointCloud2`. 
+
+----
+## Prerequisites for Running the Example Programs
 
 This tutorial requires a ROS2 (`jazzy`) environment, a workspace at `${ROS2_WS}` and the `rviz_marker_publisher` package has been installed under `${ROS2_WS}/src/`.    
 
@@ -29,7 +47,7 @@ source instll/setup.bash
 > [Installation Guide](./INSTALL.md).
 >
 
-## The First Example Program 
+## The First Example 
 
 The example program `intro_0.py` provides a basic example of using `rviz_marker_publisher` to publish a marker.  
 
@@ -152,12 +170,28 @@ Generally, the `RvizMarkerPublisher` supports three modes of marker persistence.
 
 ### Publish Once and Forget
  
-The publish-once-and-forget is the default mode and enabled by the function `publish`. 
+The publish-once-and-forget is the default mode. 
+
 - To receive the marker, the visualization tool must be launched and subscribing to the relevant topic. 
 - The received marker will be displayed for a period according to the `lifetime` parameter. 
 - A late-joining visualization tool will never receive the marker.
 
-### Publish and Cache for Re-Publish
+The mode is enabled by the function `publish`.
+
+```python
+# function prototype
+def publish(self, the_object:Marker | MarkerArray | PointCloud2, topic:str=None, delay:float=None, update_stamp:bool=True) -> Marker | MarkerArray | PointCloud2
+```
+| Parameters | Definitions                            | Remarks | 
+| :----------------   | :------                              | :------        |
+| `the_object`        | The object to be published | Any of the `Marker`, `MarkerArray`, `PointCloud` |
+| `topic`             | The target ROS2 topic   | `str`, use the default topics of `RvizMarkerPublisher` if not specified |
+| `delay`             | The waiting time in seconds before the object is published | default to no delay | 
+| `update_stamp`      | The timestamp of the object is updated at publishing | default to `True` |
+
+The function returns the value of the parameter `the_object`, allowing the object to be created inline and returned in the function call.
+
+### Publish and Cache for Refresh Visualization Tools
 
 The publish-and-cache mode is enabled by the function `publish_and_cache`.  Refer to the example `intro_1.py` that has replaced the `publish` call in `intro_0.py` by `publish_and_cache`.
 
@@ -179,6 +213,22 @@ The publish-and-cache mode is enabled by the function `publish_and_cache`.  Refe
     # change the re-publish cycle to 1.0 s
     rv = RvizMarkerPublisher(the_node, republish_timer_cycle=1.0)
 ```
+
+The function `publish_and_cache` supports a different set of parameters.
+
+```python
+# function prototype
+def publish_and_cache(self, the_object:Marker | MarkerArray | PointCloud2, topic:str=None, pub_tf:bool=False, update_stamp:bool=True) -> Marker | MarkerArray | PointCloud2
+```
+| Parameters | Definitions                            | Remarks | 
+| :----------------   | :------                              | :------        |
+| `the_object`        | The object to be published | Any of the `Marker`, `MarkerArray`, `PointCloud` |
+| `topic`             | The target ROS2 topic   | `str`, use the default topics of `RvizMarkerPublisher` if not specified |
+| `pub_tf`            | Turn the marker into a reference frame if it is `True` | default to `False` | 
+| `update_stamp`      | The timestamp of the object is updated at publishing | default to `True` |
+
+Read the section on _Marker-linked Transform_ on the purpose of the parametere `pub_tf`.
+
 
 ### Publish to a Topic with QoS TRANSIENT_LOCAL Durability
 
@@ -354,6 +404,8 @@ The following example shows how to create a green cube of size (1, 1, 1) at posi
 ```python
 cube_marker = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], rgba=[0.5, 1.0, 0.5, 0.5]) 
 ```
+![Cube Marker 1](./assets/Ex_Marker_Cube_1.png)
+
 The second way is to specify the positions and the orientation of the cube through the parameter `xyzrpy`, and the size through the paramter`scale`.
 
 ```python
@@ -375,6 +427,7 @@ The following example shows how to create a blue cuboid of size (0.5, 1.0, 1.5) 
 ```python
 cuboid_marker = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
 ```
+![Cube Marker 2](./assets/Ex_Marker_Cube_2.png)
 
 Run the example scripts `cube_marker_1.py` and `cube_marker_2.py` for a demonstration.
 
@@ -406,7 +459,6 @@ The following example shows how to create two red text markers, _Hello_ and _Wor
 Run the example script `text_marker.py` for a demonstration.
 
 #### Line, Arrow, and Path
-
 
 ##### Line: create_line_marker
 
@@ -486,6 +538,8 @@ path_marker = rviz_marker_publisher.create_path_marker(name='path', id=1, xyzlis
 
 Run the example scripts `arrow_marker.py`, `line_marker_multi.py` and `path_marker.py` for a demonstration.
 
+![Path Marker](./assets/Ex_Marker_Path.png)
+
 #### Mesh: create_mesh_marker
 
 The function is used to create a mesh marker from a resource URI, such as a file in STL or DAE format.  The actual acceptable formats depends on the visualization tool. 
@@ -549,6 +603,8 @@ The following example shows how to create a reference frame for each of the `xy`
 
 Run the example scripts `axisplane_marker.py` for a demonstration.
 
+![AxisPlane Marker](./assets/Ex_Marker_Axisplane.png)
+
 ### Building MarkerArray
 
 The package provides one function for creating a `MarkerArray`, by converting a list of `Marker` messages into a `MarkerArray` message.
@@ -577,6 +633,8 @@ marker_array = rviz_marker_publisher.create_marker_array(markers_list)
 
 Run the example scripts `marker_array.py` for a demonstration.
 
+![Marker Array](./assets/Ex_MarkerArray2.png)
+
 ### Building PointCloud2
 
 The package provides a function for creating a `PointCloud2` from an image.
@@ -603,6 +661,8 @@ image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_ima
 ```
 
 Run the example scripts `pointcloud_from_image.py` for a demonstration.
+
+![Image PointCloud](./assets/Ex_Image_PointCloud.png)
 
 ### Deleting Marker, MarkerArray, and PointClouds
 
@@ -713,9 +773,106 @@ The following example shows the use of the function `move_marker` to move the sp
         time.sleep(0.1)
 ```
 
+Run the example scripts `marker_animation_1.py`, `marker_animation_2.py` and `marker_animation_3.py` for a demonstration.
+
+![Marker Transform](./assets/Ex_Basic_Animation.png)
+
 ---
 
-## Configure the RvizMarkerPublisher instance
+## Marker-Linked Transforms and Custom Transforms
+
+### Marker-Linked Transforms
+
+With the package `RvizMarkerPublisher`, a marker can represent both a visualization object and a reference frame. `RvizMarkerPublisher` can manage and regularly publish the transform from the parent frame of the marker to its current pose.
+
+To turn a marker into a reference frame, publish the marker using `publish_and_cache` and set the parameter `pub_tf` to `True`.  After this, `RvizMarkerPublisher` will regularly publish the transform until the cached marker is deleted. Note that the `pub_tf` parameter has no effect on `MarkerArray` and `PointCloud2` types of objects.
+
+The following example shows how to turn a sphere marker into a reference frame. Note that the name of tf is formed from the `name` and the `id` of the marker, and in the following example, the frame is called `sphere.1`.
+
+```python
+    sphere_marker = rviz_marker_publisher.create_sphere_marker(name='sphere', id=1, xyzrpy=[1, 1, 1], frame_id='map', scale=0.20, rgba=[1.0, 0.5, 0.5, 0.5])
+    rv.publish_and_cache(sphere_marker, pub_tf=True)  # the tf is named 'sphere.1'.
+```
+
+The transform from the parent frame `map` to the marker's frame `sphere.1` is added to the tree of transforms.  The sphere marker can be used as the parent frame of other markers.  The following examples shows how to use `sphere.1` as the parent frame of a new cube marker. 
+
+```python
+    cube_marker = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], frame_id='sphere.1', rgba=[0.5, 1.0, 0.5, 0.5])    
+    rv.publish_and_cache(cube_marker)
+```
+
+The transform is linked to the pose of the marker.  The transform is updated when the pose of the marker is updated. The following example shows shifting the sphere marker by (-1.0, -1.0, 0.0) updates the cube marker by the same displacement at the same time.
+
+```python
+    rviz_marker_publisher.move_marker(sphere_marker, (-1.0, -1.0, 0.0))
+    # the cube marker pose is also updated by the offset (-1.0, -1.0, 0.0)
+```
+
+Run the example scripts `marker_pub_tf.py` for a demonstration.
+
+![Marker Transform](./assets/Ex_Basic_4.png)
+
+### Custom Transforms
+
+`RvizMarkerPublisher` supports defining custom transforms that are independent of marker-linked tranforms.
+
+```python
+# function prototype
+def publish_custom_tf(self, frame_id:str, parent_frame_id:str, pose:Pose, static_tf:bool=False, linked_marker:Marker=None) -> None:
+```
+
+| Function parameters | Definitions          | Acceptable Values | 
+| :----------------   | :------              | :------        |
+| `frame_id`          | The new frame of the transform | `str`   |
+| `parent_frame_id`   | An existing frame as the parent of the transform | `str` |
+| `pose`              | The pose of the new frame | The pose is ignored if linked_marker is given |
+|                     |                          | Accepts pose formats similar to other functions in the package |
+| `static_tf`         | Publish this transform as static (latched) |                    |
+| `linked_marker`     | Define a marker-linked transform if a marker is provided | `Marker`, default to None |
+
+The following example shows how to define a new frame called `workspace` from the parent frame `map`.
+
+```python
+    # add a custom frame called 'workspace' from the parent frame 'map'
+    transform_pose = Pose()
+    transform_pose.position = Point(x=1.0, y=1.0, z=1.0)
+    transform_pose.orientation = Quaternion(x=0.0, y=0.0, z=0.0, q=1.0)
+    logger.info(f'(define custom tf) publish_custom_tf "workspace" at {transform_pose}')
+    rv.publish_custom_tf('workspace', 'map', transform_pose)
+```
+
+Run the example scripts `custom_transform.py` for a demonstration.
+
+![Custom Transform](./assets/Ex_Custom_Transform.png)
+
+---
+## Activate New Topics
+
+To create topics in addition to the default topics, use the function `activate_topic`.
+
+```python
+def activate_topic(self, topic:str, message_cls:type, qos_profile:QoSProfile=None) -> None
+```
+
+| Function parameters | Definitions          | Acceptable Values | 
+| :----------------   | :------              | :------        |
+| `topic`             | The new topic name  | `str`   |
+| `message_cls`       | The target message class | One of `Marker`, `MarkerArray` and `PointCloud2` |
+| `qos_profile`       | The Qos Profile for the topic | `QoSProfile`, use the default `QoSProfile` if it is not specified |
+
+The `ValueError` will be raised if the topic is already used.
+
+The topic may be removed using the function `deactivate_topic`
+
+```python
+def deactivate_topic(self, topic:str) -> None
+```
+
+Run the example scripts `topic_activate.py` for a demonstration.
+
+---
+
+## Configure the RvizMarkerPublisher Instance
 
 Some critical characteristics of publishing objects/markers by `RvizMarkerPublisher` can be configured through passing parameters to the constructor during instantiation. The following table lists the 
 parameters.
@@ -724,14 +881,13 @@ parameters.
 | :----------------   | :------       | :------   | :------    |
 | `node`          | `rclpy.node.Node` | Mandatory |            |
 | `fixed_frame`   | `str`             |  Optional | The fixed frame to serve as the root of the transforms, default to `map` |
-| `callback_group`   | `CallbackGroup`  |  Optional | The callback group used to drive the `RvizMarkerPublisher` instance, default to `ReentrantCallbackGroup` |
 | `default_qos_profile` | `QoSProfile` |  Optional | The profile of the default topics, default to a profile of `VOLATILE`, `RELIABLE`, `KEEP_LAST` |
-| `default_marker_topic` | `str`             |  Optional | The default topic for markers, default to `/visualization_marker` |
-| `default_marker_array_topic`   | `str`             |  Optional | The default topic for marker array, default to `/visualization_marker_array`  |
-| `default_pointcloud_topic`   | `str`             |  Optional | The default topic for pointclouds, default to `/visualization_cloud`  |
-| `refresh_timer_cycle`   | A positive number    |  Optional | The cycle period between successive refresh publish of cached objects, default to 10.0 seconds |
-| `best_effort_timer_cycle`   | A positive number    |  Optional | The cycle period between successive best effort publish, default to 0.01 seconds |
-| `tf_refresh_timer_cycle`   | A positive number    |  Optional | The cycle period between successive broadcast of transform, default to 0.05 seconds |
+| `default_marker_topic` | `str`             |  Optional | The default topic for markers, default to `visualization_marker` |
+| `default_marker_array_topic`   | `str`             |  Optional | The default topic for marker array, default to `visualization_marker_array`  |
+| `default_pointcloud_topic`   | `str`             |  Optional | The default topic for pointclouds, default to `visualization_cloud`  |
+| `refresh_timer_rate`   | Hz, a positive number  |  Optional | The rate refresh publish of cached objects, default to 0.1 Hz |
+| `best_effort_timer_rate`   | Hz, a positive number    |  Optional | The rate of best effort publish, default to 100 Hz |
+| `tf_refresh_timer_rate`   | Hz, a positive number    |  Optional | The rate of transform broadcast, default to 20 Hz |
 | `auto_refresh`   | `bool`    |  Optional | True if the cached objects are refreshed once in a refresh cycle, default to `True` |
 
 ### Refresh Cached Objects
@@ -743,9 +899,29 @@ the function `publish_cached_objects_now` if auto refresh is disabled.
 # function prototype
 def publish_cached_objects_now(self) -> None
 ```
+Auto-refresh of cached objects is handy for pose update and animation of a set of objects.  However, the rate of update is constant and fixed at the instantiation time of `RvizMarkerPublisher`. If a quick update for an object is required, call `publish` explicitly for publishing it at the best effort rate.
 
-Auto-refresh of cached objects is handy for object pose update and animation.  The 
+### The Timer Cycle 
 
+The `RvizMarkerPublisher` organizes to-be-published objects into three queues:
+- The _best effort_ queue: the objects are to be published as soon as the `delay` has elapsed. The objects are removed after they are published.
+- The _cached_ queue: the objects are cached and to be published regularly in cycles for the visualization tools to refresh the scene.
+- The _transforms_ queue: the transforms are to be broadcast regularly.
+
+The parameters `best_effort_timer_rate`, `refresh_timer_rate`, and `tf_refresh_timer_rate` determinates the intervals between processing each of the three queues.  
+
+
+### The Default Topics and QoSProfile
+
+Specify new topic names through the parameters `default_marker_topic`, `default_marker_array_topic` and `default_pointcloud_topic` if it is desirable for the application.  The `QoSProfile` can be specified using the parameter `default_qos_profile`.
+
+The following example shows how to instantiate a `RvizMarkerPublisher` with custom default topic names.
+
+```python
+    rv = RvizMarkerPublisher(the_node, default_marker_topic='rviz_marker', default_pointcloud_topic='rviz_cloud')
+```
+
+Run the example scripts `topic_set_default.py` for a demonstration.
 
 
 
