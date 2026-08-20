@@ -1,4 +1,4 @@
-# RViz Marker Publisher: Tutorial Part 1
+# RViz Marker Publisher: Programming Guide
 
 **Robotics and Autonomous Systems Group, Research Engineering Facility, Research Infrastructure** 
 **Queensland University of Technology**
@@ -59,13 +59,13 @@ The example program `intro_0.py` provides a basic example of using `rviz_marker_
 rviz2
 ```
 
-![RViz2 Main Panel](./assets/RVizMainPanel.png)
+![RViz2 Main Panel](./images/RVizMainPanel.png)
 
 - At the bottom of the _Display_ panel, press the __Add__ button.  On the popup, select _Marker_ from the list and press __OK__ to confirm
 - A _Marker_ placeholder is now added to the Display list. 
 - Enter `/visualization_marker` in the _topic_ textbox under _Marker_. RViz2 will subscribe to the topic and receive markers published to the topic.
 
-![RViz2 Add Marker](./assets/RVizMarkerAdd.png)
+![RViz2 Add Marker](./images/RVizMarkerAdd.png)
 
 - Repeat the above and add _MarkerArray_ and _PointCloud2_ to the display.  The topics for the two display types are given in the table below.  
 
@@ -84,7 +84,7 @@ ros2 run rviz_marker_publisher intro_0
 ```
 - The program will clear the 3D scene and publish a red sphere at position (1, 1, 1).
 
-![RViz2 A Red Sphere](./assets/Ex_Basic_1.png)
+![RViz2 A Red Sphere](./images/Ex_Basic_1.png)
 
 ### Using the Package: Essential Setup 
 
@@ -404,7 +404,7 @@ The following example shows how to create a green cube of size (1, 1, 1) at posi
 ```python
 cube_marker = rviz_marker_publisher.create_cube_marker_from_bbox(name='cube', id=1, bbox3d=[-0.5, 0.5, -0.5, 0.5, -0.5, 0.5], rgba=[0.5, 1.0, 0.5, 0.5]) 
 ```
-![Cube Marker 1](./assets/Ex_Marker_Cube_1.png)
+![Cube Marker 1](./images/Ex_Marker_Cube_1.png)
 
 The second way is to specify the positions and the orientation of the cube through the parameter `xyzrpy`, and the size through the paramter`scale`.
 
@@ -427,7 +427,7 @@ The following example shows how to create a blue cuboid of size (0.5, 1.0, 1.5) 
 ```python
 cuboid_marker = rviz_marker_publisher.create_cube_marker_from_xyzrpy(name='cube', id=2, xyzrpy=[2.0, 2.0, 0.5, 1.2, 0.0, 1.2], scale=(0.5, 1.0, 1.5), rgba=[0.0, 0.5, 1.0, 0.5])
 ```
-![Cube Marker 2](./assets/Ex_Marker_Cube_2.png)
+![Cube Marker 2](./images/Ex_Marker_Cube_2.png)
 
 Run the example scripts `cube_marker_1.py` and `cube_marker_2.py` for a demonstration.
 
@@ -538,7 +538,7 @@ path_marker = rviz_marker_publisher.create_path_marker(name='path', id=1, xyzlis
 
 Run the example scripts `arrow_marker.py`, `line_marker_multi.py` and `path_marker.py` for a demonstration.
 
-![Path Marker](./assets/Ex_Marker_Path.png)
+![Path Marker](./images/Ex_Marker_Path.png)
 
 #### Mesh: create_mesh_marker
 
@@ -603,7 +603,7 @@ The following example shows how to create a reference frame for each of the `xy`
 
 Run the example scripts `axisplane_marker.py` for a demonstration.
 
-![AxisPlane Marker](./assets/Ex_Marker_Axisplane.png)
+![AxisPlane Marker](./images/Ex_Marker_Axisplane.png)
 
 ### Building MarkerArray
 
@@ -633,7 +633,7 @@ marker_array = rviz_marker_publisher.create_marker_array(markers_list)
 
 Run the example scripts `marker_array.py` for a demonstration.
 
-![Marker Array](./assets/Ex_MarkerArray2.png)
+![Marker Array](./images/Ex_MarkerArray2.png)
 
 ### Building PointCloud2
 
@@ -662,7 +662,7 @@ image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_ima
 
 Run the example scripts `pointcloud_from_image.py` for a demonstration.
 
-![Image PointCloud](./assets/Ex_Image_PointCloud.png)
+![Image PointCloud](./images/Ex_Image_PointCloud.png)
 
 ### Deleting Marker, MarkerArray, and PointClouds
 
@@ -775,7 +775,7 @@ The following example shows the use of the function `move_marker` to move the sp
 
 Run the example scripts `marker_animation_1.py`, `marker_animation_2.py` and `marker_animation_3.py` for a demonstration.
 
-![Marker Transform](./assets/Ex_Basic_Animation.png)
+![Marker Transform](./images/Ex_Basic_Animation.gif)
 
 ---
 
@@ -810,7 +810,7 @@ The transform is linked to the pose of the marker.  The transform is updated whe
 
 Run the example scripts `marker_pub_tf.py` for a demonstration.
 
-![Marker Transform](./assets/Ex_Basic_4.png)
+![Marker Transform](./images/Ex_Basic_4.png)
 
 ### Custom Transforms
 
@@ -843,7 +843,7 @@ The following example shows how to define a new frame called `workspace` from th
 
 Run the example scripts `custom_transform.py` for a demonstration.
 
-![Custom Transform](./assets/Ex_Custom_Transform.png)
+![Custom Transform](./images/Ex_Custom_Transform.png)
 
 ---
 ## Activate New Topics

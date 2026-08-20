@@ -13,19 +13,17 @@ from setuptools.command.build_py import build_py
 # colcon build --packages-select rviz_marker_publisher --event-handlers console_direct+ 
 # colcon build --symlink-install --packages-select rviz_marker_publisher --event-handlers console_direct+ 
 # colcon build --symlink-install --packages-select rviz_marker_publisher --event-handlers console_stderr+
-# colcon build --symlink-install
+# colcon build --symlink-install --event-handlers console_direct+ 
 
 PACKAGE_NAME = 'rviz_marker_publisher'
 INSTALL_REQUIRES = [
-    # 'opencv_contrib_python>=5',
     'opencv_python',
     'wrapt<2.0.0',
     'numpy<=2',
-    'pandas'
+    'pandas',
+    'ruff',
 ]
-EXTRA_REQUIRES = {
-    'test': ['pytest'],
-}
+EXTRA_REQUIRES = {}
 
 # custom build step to force uv to run before compiling the package
 class UVInstallThenBuild(build_py):
@@ -119,4 +117,5 @@ setup(
         'console_scripts': find_console_scripts(['examples']),
         # 'console_scripts': 'display_info = examples.move.display_info:main',
     },
+    tests_require=['pytest'],
 )

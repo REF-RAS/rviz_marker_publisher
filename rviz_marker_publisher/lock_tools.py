@@ -1,11 +1,12 @@
-# Andrew Kwok Fai LUI, 
+# ruff: noqa
+# Andrew Kwok Fai LUI,
 # Robotics and Autonomous Systems Group, REF, RI
 # and the Queensland University of Technology
 
-__author__ = 'Andrew Lui'
-__version__ = '1.0'
-__email__ = 'ak.lui@qut.edu.au'
-__status__ = 'Development'
+__author__ = "Andrew Lui"
+__version__ = "1.0"
+__email__ = "ak.lui@qut.edu.au"
+__status__ = "Development"
 
 from threading import Lock, RLock
 
@@ -13,11 +14,12 @@ from wrapt.wrappers import FunctionWrapper
 
 # Reference: https://wrapt.readthedocs.io/en/latest/examples.html
 
+
 def synchronized(wrapped):
     def _synchronized_lock(context):
         # Attempt to retrieve the lock for the specific context.
 
-        lock = vars(context).get('_synchronized_lock', None)
+        lock = vars(context).get("_synchronized_lock", None)
 
         if lock is None:
             # There is no existing lock defined for the context we
@@ -32,8 +34,7 @@ def synchronized(wrapped):
             # creation and assignment of the lock attribute against
             # the context.
 
-            meta_lock = vars(synchronized).setdefault(
-                    '_synchronized_meta_lock', Lock())
+            meta_lock = vars(synchronized).setdefault("_synchronized_meta_lock", Lock())
 
             with meta_lock:
                 # We need to check again for whether the lock we want
@@ -41,7 +42,7 @@ def synchronized(wrapped):
                 # at the same time and were competing to create the
                 # meta lock.
 
-                lock = vars(context).get('_synchronized_lock', None)
+                lock = vars(context).get("_synchronized_lock", None)
 
                 if lock is None:
                     lock = RLock()
@@ -58,7 +59,6 @@ def synchronized(wrapped):
             return wrapped(*args, **kwargs)
 
     class _FinalDecorator(FunctionWrapper):
-
         def __enter__(self):
             self._self_lock = _synchronized_lock(self.__wrapped__)
             self._self_lock.acquire()
@@ -69,36 +69,43 @@ def synchronized(wrapped):
 
     return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
 
-if __name__ == '__main__':
+
+if __name__ == "__main__":
+
     class Class:
         @synchronized
         @classmethod
         def function_cm(cls):
             pass
+
         def function_im(self):
             with synchronized(Class):
                 pass
+
         @synchronized
         def function_im_1(self):
             pass
-        
-    @synchronized # lock bound to function1
+
+    @synchronized  # lock bound to function1
     def function1():
         pass
-    @synchronized # lock bound to function2
+
+    @synchronized  # lock bound to function2
     def function2():
         pass
 
-    @synchronized # lock bound to Class
+    @synchronized  # lock bound to Class
     class Class:
-        @synchronized # lock bound to instance of Class
+        @synchronized  # lock bound to instance of Class
         def function_im(self):
             pass
-        @synchronized # lock bound to Class
+
+        @synchronized  # lock bound to Class
         @classmethod
         def function_cm(cls):
             pass
-        @synchronized # lock bound to function_sm
+
+        @synchronized  # lock bound to function_sm
         @staticmethod
         def function_sm():
             pass

@@ -35,14 +35,14 @@ def main():
     time.sleep(2.0)  
     # create and publish a white line marker and two arrow markers
     # the white line marker
-    line_marker = rviz_marker_publisher.create_line_marker(name='work_area', id=1, xyz1=[0.0, -0.5, 0], xyz2=[0.0, 1.5, 1.0], frame_id='map', line_width=0.05, rgba=[1.0, 1.0, 1.0, 1.0],)
+    line_marker = rviz_marker_publisher.create_line_marker(name='arrow', id=1, xyz1=[0.0, -0.5, 0], xyz2=[0.0, 1.5, 1.0], frame_id='map', line_width=0.05, rgba=[1.0, 1.0, 1.0, 1.0],)
     rv.publish(line_marker)   
     # the yellow arrow marker
-    arrow_marker = rviz_marker_publisher.create_arrow_marker(name='work_area', id=2, xyz1=[-1.5, 0, 0], xyz2=[-1.5, 1, 0], frame_id='map', 
+    arrow_marker = rviz_marker_publisher.create_arrow_marker(name='arrow', id=2, xyz1=[-1.5, 0, 0], xyz2=[-1.5, 1, 0], frame_id='map', 
                                                              arrow_head_diameter=0.2, arrow_shaft_diameter=0.1, arrow_head_length=0.05, rgba=[1.0, 1.0, 0.0, 1.0],)
     rv.publish(arrow_marker) 
     # the green arrow marker       
-    arrow_marker_again = rviz_marker_publisher.create_arrow_marker_from_xyzrpy(name='work_area', id=3, xyzrpy=[1, 1, 1, 0, 3.14, 0], frame_id='map', 
+    arrow_marker_again = rviz_marker_publisher.create_arrow_marker_from_xyzrpy(name='arrow', id=3, xyzrpy=[1, 1, 1, 0, 3.14, 0], frame_id='map', 
                                                                 arrow_length=0.50, arrow_head_diameter=0.05, rgba=[0.0, 1.0, 0.5, 1.0])
     rv.publish(arrow_marker_again)   
       

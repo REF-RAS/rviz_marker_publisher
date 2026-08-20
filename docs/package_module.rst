@@ -1,10 +1,11 @@
-RViz Tools API Reference
+RASG RViz Marker Publisher API Reference
 ===============================================
 
-rviz\_marker.rviz\_tools module
+rviz\_marker\_publisher.publisher module
 -----------------------------------------
 
-.. automodule:: rviz_marker.rviz_tools
+.. automodule:: publisher
     :members:
     :undoc-members:
     :show-inheritance:
+

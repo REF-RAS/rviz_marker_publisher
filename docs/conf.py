@@ -14,13 +14,13 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../../examples'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../rviz_marker_publisher'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../examples'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'RViz Tools'
-copyright = '2024, Andrew Lui'
+project = 'RViz Marker Publisher for ROS2'
+copyright = '2026, Andrew Lui'
 author = 'Andrew Lui'
 
 # The short X.Y version
@@ -45,9 +45,9 @@ extensions = [
 
 myst_all_links_external = False
 
-autodoc_mock_imports = ['rospy', 'geometry_msgs', 'tf', 'tf2_msgs', 'std_msgs', 'sensor_msgs', 'visualization_msgs',
-                        'shape_msgs', 'actionlib_msgs', 'controller_manager_msgs', 'rospkg', 
-                        'cv2', 'numpy']
+autodoc_mock_imports = ['rclpy', 'geometry_msgs', 'tf', 'tf2_msgs', 'std_msgs', 'sensor_msgs', 'visualization_msgs',
+                        'actionlib_msgs', 'controller_manager_msgs', 'tf_transformations',
+                        'cv2', 'numpy', 'pandas']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']
@@ -144,7 +144,7 @@ latex_documents = [
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'rviz_marker_tools', 'RViz Marker Tools Documentation',
+    (master_doc, 'rviz_marker_publisher', 'RViz Marker Tools Documentation',
      [author], 1)
 ]
 
@@ -155,8 +155,8 @@ man_pages = [
 # (source start file, target name, title, author,
 #  dir menu entry, description, category)
 texinfo_documents = [
-    (master_doc, 'rviz_marker_tools', 'RViz Marker Tools Documentation',
-     author, 'rviz_marker_tools', 'One line description of project.',
+    (master_doc, 'rviz_marker_publisher', 'RViz Marker Tools Documentation',
+     author, 'rviz_marker_publisher', 'One line description of project.',
      'Miscellaneous'),
 ]
 

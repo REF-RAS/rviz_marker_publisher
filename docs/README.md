@@ -8,9 +8,6 @@
 ![Visualization Topic](https://badgen.net/badge/topic/Visualization/orange?icon=github)
 [![License: BSD NON-AI](https://badgen.net/badge/license/BSD-3%20NON-AI?icon=github)](https://github.com/non-ai-licenses/non-ai-licenses/blob/main/NON-AI-BSD3)
 
-[![Docker Compose Build and Deploy](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/docker-build.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/docker-build.yml)
-[![Build Sphinx and Deploy](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/sphinx.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/sphinx.yml)
-
 ## Introduction
 
 The `rviz_marker_publisher` is a ROS2 package and Python API for drawing markers and pointclouds inside visualization tools such as RViz2.  The objective of the package is to hide away the naunces of creating and publishing different types of marker messages, and to provide value-adding services such as marker caching and refreshing, management of topics, publishers, and custom transforms.
@@ -60,11 +57,6 @@ def main():
 - Cache selected markers for auto-repeat publishing - late-joining subscribers can still receive them even if the QoS durability of the topic is set to VOLATILE.
 - Update the pose of markers and that of the associated transform.
 - Add and delete new topics and configure the QoS of the associated publishers.
-
-## Table of Contents
-
-- [Installation Guide](./docs/INSTALL.md)
-- [Tutorial](./docs/TUTORIAL.md)
 
 ### Attribution
 
