@@ -15,34 +15,37 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import yaml, os, time, numbers, threading, random, traceback
-from enum import Enum
+import numbers
+import threading
 from collections import defaultdict
 from dataclasses import dataclass
-from typing import Any, Tuple
-import cv2
+from enum import Enum
+from typing import Any
+
 import numpy as np
-import rclpy, tf2_ros
-from rclpy.node import Node
-from rclpy.task import Future
-from rclpy.time import Time
-from rclpy.duration import Duration
-from rclpy import logging
+import rclpy
+import tf2_ros
+from geometry_msgs.msg import Point, Pose, PoseStamped, TransformStamped, Vector3
 from rclpy.callback_groups import CallbackGroup, ReentrantCallbackGroup
-from rclpy.qos import  QoSDurabilityPolicy, QoSHistoryPolicy, QoSProfile, QoSReliabilityPolicy
+from rclpy.duration import Duration
+from rclpy.node import Node, NodeNameNonExistentError
 from rclpy.publisher import Publisher
-from std_msgs.msg import Header
-from tf2_msgs.msg import TFMessage
-from std_msgs.msg import ColorRGBA, Header
-from geometry_msgs.msg import Pose, PoseStamped, TransformStamped, Vector3, Point, Quaternion
+from rclpy.qos import (
+    QoSDurabilityPolicy,
+    QoSHistoryPolicy,
+    QoSProfile,
+    QoSReliabilityPolicy,
+)
 from sensor_msgs.msg import PointCloud2, PointField
 from sensor_msgs_py import point_cloud2
+from std_msgs.msg import ColorRGBA, Header
 from visualization_msgs.msg import Marker, MarkerArray
 
-from rviz_marker_publisher.pose_tools import list_to_pose, pose_to_xyzq
-from rviz_marker_publisher.logging_tools import logger
+from rviz_marker_publisher import pose_tools
 from rviz_marker_publisher.lock_tools import synchronized
-import rviz_marker_publisher.pose_tools as pose_tools
+from rviz_marker_publisher.logging_tools import logger
+from rviz_marker_publisher.pose_tools import list_to_pose
+
 
 class RGBAColors(int, Enum):
     """ Define common use colours for visualization
@@ -65,8 +68,8 @@ class RGBAColors(int, Enum):
         return rgba
 
 # internal function to create a marker based on a template
-def _create_marker(name:str, id:int, marker_type:int=None, frame_id:str=None, lifetime=None, 
-                        pose=None, scale:list=None, color:list=None) -> Marker:
+def _create_marker(name:str, id:int, marker_type:int | None=None, frame_id:str | None=None, lifetime=None, 
+                        pose:list|Pose|PoseStamped|None=None, scale:list|None=None, color:list|None=None) -> Marker:
     """ create a Marker object based on a template
     :meta private:
     :param name: the name space of the marker, str type
@@ -119,7 +122,7 @@ def _create_marker(name:str, id:int, marker_type:int=None, frame_id:str=None, li
     the_marker.color = ColorRGBA(r=float(color[0]), g=float(color[1]), b=float(color[2]), a=float(color[3]))       
     return the_marker    
     
-def _create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
+def _create_delete_marker(name:str, id:int, frame_id:str|None=None) -> Marker:
     """ Returns a Marker object specified to delete a marker
 
     :param name: the name space of the marker
@@ -133,7 +136,7 @@ def _create_delete_marker(name:str, id:int, frame_id:str=None) -> Marker:
         the_marker.header.frame_id = frame_id   # the frame_id is not relevant in DELETE
     return the_marker
     
-def _create_delete_all_marker(frame_id:str=None) -> Marker:
+def _create_delete_all_marker(frame_id:str|None=None) -> Marker:
     """ Returns a Marker object specified to delete all markers
 
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
@@ -145,7 +148,7 @@ def _create_delete_all_marker(frame_id:str=None) -> Marker:
         the_marker.header.frame_id = frame_id  # the frame_id is not relevant in DELETEALL
     return the_marker   
 
-def _create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
+def _create_delete_all_marker_array(frame_id:str|None=None) -> MarkerArray:
     """ Returns a Marker object specified to delete all markers
 
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
@@ -159,8 +162,8 @@ def _create_delete_all_marker_array(frame_id:str=None) -> MarkerArray:
     the_marker_array.markers.append(the_marker) 
     return the_marker_array   
 
-def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str=None, axes:str='xy', plane_thickness=0.005, 
-                             rgba:list=None, lifetime:float=None) -> Marker:
+def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_id:str|None=None, axes:str='xy', plane_thickness:float=0.005, 
+                             rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a 2D region as a plane
 
     :param name: the name space of the marker
@@ -171,7 +174,7 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_i
     :param axes: a string representing the axes where the bounding box lies, defaults to 'xy'
     :param plane_thickness: the thickness of the plane to be displayed, defaults to 0.005
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     rpy = [0, 0, 0]
@@ -198,7 +201,7 @@ def create_axisplane_marker(name:str, id:int, bbox2d:list, offset:float, frame_i
                                 pose=pose, scale=scale, color=rgba)
     return the_marker
 
-def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=None, rgba:list=None, lifetime:float=None) -> Marker:
+def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str|None=None, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a 3D box defined by the min xyz and max xyz that aligns with the axes of the reference frame
 
     :param name: the name space of the marker
@@ -206,7 +209,7 @@ def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=Non
     :param bbox3d: a bounding box as a 6-list [min_x, min_y, min_z, max_x, max_y, max_z]
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     rpy = [0, 0, 0]
@@ -217,7 +220,7 @@ def create_cube_marker_from_bbox(name:str, id:int, bbox3d:list, frame_id:str=Non
                                 pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str|None=None, scale:float|list=0.5, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a 3D box defined by both the position (xyz) and orientation (rpy) with respect to the axes of the reference frame
 
     :param name: the name space of the marker
@@ -225,14 +228,14 @@ def create_cube_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=N
     :param bbox3d: a bounding box as a list [min_x, min_y, min_z, max_x, max_y, max_z]
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
     the_marker = _create_marker(name, id, Marker.CUBE, frame_id, lifetime, pose=pose, scale=scale, color=rgba) 
     return the_marker
 
-def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=None, arrow_length:float=0.5, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) -> Marker:
+def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str|None=None, arrow_length:float=0.5, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying an arrow
 
     :param name: the name space of the marker
@@ -243,7 +246,7 @@ def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=
     :param arrow_shaft_diameter: the diameter of the arrow shaft, defaults to 0.1
     :param arrow_head_diameter: the diameter of the arrow head, defaults to 0.1
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
@@ -251,7 +254,7 @@ def create_arrow_marker_from_xyzrpy(name:str, id:int, xyzrpy:list, frame_id:str=
     the_marker = _create_marker(name, id, Marker.ARROW, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=arrow_scale, color=rgba)    
     return the_marker
 
-def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, arrow_head_length:float=0.05, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list=None, lifetime:float=None) -> Marker:
+def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str|None=None, arrow_head_length:float=0.05, arrow_shaft_diameter:float=0.1, arrow_head_diameter:float=0.1, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying an arrow
 
     :param name: the name space of the marker
@@ -263,7 +266,7 @@ def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=Non
     :param arrow_width: the width of the arrow shaft, defaults to 0.1
     :param arrow_height: the height of the arrow shaft, defaults to 0.1
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
@@ -272,7 +275,7 @@ def create_arrow_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=Non
     the_marker.points[:] = [Point(x=float(xyz1[0]), y=float(xyz1[1]), z=float(xyz1[2])), Point(x=float(xyz2[0]), y=float(xyz2[1]), z=float(xyz2[2]))]
     return the_marker
 
-def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
+def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str|None=None, line_width:float=0.01, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a line
 
     :param name: the name space of the marker
@@ -282,7 +285,7 @@ def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param line_width: the width of the line, defaults to 0.01
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose([0, 0, 0, 0, 0, 0])
@@ -291,7 +294,7 @@ def create_line_marker(name:str, id:int, xyz1:list, xyz2:list, frame_id:str=None
     the_marker.points[:] = [Point(x=float(xyz1[0]), y=float(xyz1[1]), z=float(xyz1[2])), Point(x=float(xyz2[0]), y=float(xyz2[1]), z=float(xyz2[2]))]
     return the_marker    
 
-def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_width:float=0.01, rgba:list=None, lifetime:float=None) -> Marker:
+def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str|None=None, line_width:float=0.01, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a path of multiple waypoints
 
     :param name: the name space of the marker
@@ -300,7 +303,7 @@ def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_w
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param line_width: the width of the line, defaults to 0.01
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
 
@@ -331,7 +334,7 @@ def create_path_marker(name:str, id:int, xyzlist:list, frame_id:str=None, line_w
 
     return the_marker
 
-def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=0.2, rgba:list=None, lifetime:float=None) -> Marker:
+def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str|None=None, scale:float|list=0.2, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a sphere
 
     :param name: the name space of the marker
@@ -340,13 +343,13 @@ def create_sphere_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale of the sphere as a list of 3 scales or a number, defaults to 0.2
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     the_marker = _create_marker(name, id, Marker.SPHERE, frame_id=frame_id, lifetime=lifetime, pose=xyzrpy, scale=scale, color=rgba)      
     return the_marker
 
-def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, scale=[0.1, 0.1, 0.2], rgba:list=None, lifetime:float=None) -> Marker:
+def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str|None=None, scale:float|list=(0.1, 0.1, 0.2), rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a cylinder
 
     :param name: the name space of the marker
@@ -355,17 +358,17 @@ def create_cylinder_marker(name:str, id:int, xyzrpy:list, frame_id:str=None, sca
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the scale of the cylinder as a list of 3 numbers representing radius in x and y direction and the height
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy) 
-    if type(scale) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in scale]):
-        logger.warning(f'create_cylinder_marker: scale should be a list of 3 numbers (radius, radius, height)')
+    if type(scale) not in (tuple, list) or any(not isinstance(x, numbers.Number) for x in scale):
+        logger.warning('create_cylinder_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
     the_marker = _create_marker(name, id, Marker.CYLINDER, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba)  
     return the_marker 
 
-def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str|None=None, scale:list|float=0.5, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a text
 
     :param name: the name space of the marker
@@ -375,7 +378,7 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=Non
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
     :param scale: the size of the text, defaults to 0.5
     :param rgba: the colour and alpha value, defaults to None
-    :param lifetime: the duration that the marker is displayed, defaults to None (indefinte)
+    :param lifetime: the duration that the marker is displayed, defaults to 0 (indefinte)
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
@@ -383,7 +386,7 @@ def create_text_marker(name:str, id:int, text:str, xyzrpy:list, frame_id:str=Non
     the_marker.text = text
     return the_marker
 
-def create_mesh_marker(name:str, id:int, resource_uri:str, xyzrpy:list, frame_id:str=None, scale:list=0.5, rgba:list=None, lifetime:float=None) -> Marker:
+def create_mesh_marker(name:str, id:int, resource_uri:str, xyzrpy:list, frame_id:str|None=None, scale:list|float=0.5, rgba:list|None=None, lifetime:float=0) -> Marker:
     """ Creates a marker for displaying a mesh object
 
     :param name: the name space of the marker
@@ -397,8 +400,8 @@ def create_mesh_marker(name:str, id:int, resource_uri:str, xyzrpy:list, frame_id
     :return: the Marker object
     """
     pose = list_to_pose(xyzrpy)
-    if type(scale) not in (tuple, list) or any([not isinstance(x, numbers.Number) for x in scale]):
-        logger.warning(f'create_mesh_marker: scale should be a list of 3 numbers (radius, radius, height)')
+    if type(scale) not in (tuple, list) or any(not isinstance(x, numbers.Number) for x in scale):
+        logger.warning('create_mesh_marker: scale should be a list of 3 numbers (radius, radius, height)')
         return None
 
     the_marker = _create_marker(name, id, Marker.MESH_RESOURCE, frame_id=frame_id, lifetime=lifetime, pose=pose, scale=scale, color=rgba) 
@@ -426,7 +429,7 @@ def create_marker_array(markers_list:list[Marker]) -> MarkerArray:
                 marker_array.markers.append(marker)
     return marker_array
 
-def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id:str=None, opacity:float=1.0, depth_array:np.ndarray=None) -> PointCloud2:
+def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel_physical_size:float=0.005, frame_id:str|None=None, opacity:float=1.0, depth_array:np.ndarray|None=None) -> PointCloud2:
     """ Create a PointCloud2 for displaying a OpenCV image (color or greyscale) 
 
     :param image_bgr: the image to be displayed, type numpy ndarray
@@ -440,8 +443,7 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
     if image_bgr is None:
         logger.error(f'{__name__} (image_to_pointcloud): the parameter image_bgr is None') 
         raise AssertionError('Parameter is None')        
-    if depth_array is not None:
-        if image_bgr.shape[0] != depth_array.shape[0] or image_bgr.shape[1] != depth_array.shape[1]:
+    if depth_array is not None and (image_bgr.shape[0] != depth_array.shape[0] or image_bgr.shape[1] != depth_array.shape[1]):
             logger.error(f'{__name__} (image_to_pointcloud): the shape of the parameter depth_array {depth_array.shape} is different from the image_bgr') 
             raise AssertionError('Parameters have different dimensions')
     # fill xyz with default values if it is not a list of 3 numbers
@@ -494,7 +496,7 @@ def create_pointcloud_from_image(image_bgr:np.ndarray, xyz:list=(0, 0, 0), pixel
     # create a PointCloud2 message using the data
     return point_cloud2.create_cloud(Header(frame_id = frame_id), fields, cloud_point_list)
 
-def _create_empty_pointcloud(frame_id:str=None) -> PointCloud2:
+def _create_empty_pointcloud(frame_id:str|None=None) -> PointCloud2:
     """ Create an empty pointcloud, which may be populated with data or used as a message to clear the existing pointcloud
 
     :param frame_id: the reference frame, defaults to None (the default fixed_frame)
@@ -521,7 +523,7 @@ def update_marker_xyzrpy(marker:Marker, xyzrpy:list) -> None:
     :param xyzrpy: the new Marker object pose in a 6-tuple xyzrpy format, each value can be a float or None (which retains the existing value)  
     :type xyzrpy: list
     """
-    assert isinstance(xyzrpy, (list, tuple)) and len(xyzrpy) == 6, f'invalid parameter (xyzrpy): expects a list of 6 numbers'
+    assert isinstance(xyzrpy, (list, tuple)) and len(xyzrpy) == 6, 'invalid parameter (xyzrpy): expects a list of 6 numbers'
     pose_xyzrpy = pose_tools.pose_to_xyzrpy(marker.pose)
     for index in range(len(xyzrpy)):
         if xyzrpy[index] is None:
@@ -536,7 +538,7 @@ def move_marker(marker:Marker, xyz_offset:list) -> None:
     :param xyz_offset: the displacement to be applied to the Marker object in a 3-tuple [dx, dy, dz] format
     :type xyz_offset: list
     """
-    assert isinstance(xyz_offset, (list, tuple)) and len(xyz_offset) == 3, f'invalid parameter (xyz_offset): expects a list of 3 numbers'
+    assert isinstance(xyz_offset, (list, tuple)) and len(xyz_offset) == 3, 'invalid parameter (xyz_offset): expects a list of 3 numbers'
     for index in range(len(xyz_offset)):
         if xyz_offset[index] is None:
             xyz_offset[index] = 0
@@ -557,7 +559,7 @@ def spin_in_thread(node:Node) -> None:
 
 # --------------------------------------------
 # An internal class manages topics and publishers for the markers in RvizVisualizer
-class PublishTopicManager():
+class PublishTopicManager:
     """ Manage the topics of Marker, MarkerArray and PointCloud2 and the publishers for RvizVisualizer
     :meta private:
     """
@@ -568,10 +570,10 @@ class PublishTopicManager():
         self._node = node
         self._default_qos_profile = default_qos_profile
         self.topics_dict = defaultdict(lambda: (None, None))         # (topic name) > tuple (message class, publisher)
-        self.topics_of_messages = defaultdict(lambda: [])        # (message cls name) > list (topic name)
+        self.topics_of_messages = defaultdict(list)        # (message cls name) > list (topic name)
 
     @synchronized
-    def add_topic_of_message_class(self, topic:str, message_cls:type, qos_profile:QoSProfile=None) -> Publisher:
+    def add_topic_of_message_class(self, topic:str, message_cls:type, qos_profile:QoSProfile|None=None) -> Publisher:
         """ Add a new topic for the given message class
 
         :meta private:
@@ -586,10 +588,10 @@ class PublishTopicManager():
         :rtype: Publisher
         """
         assert isinstance(topic, str), f'TopicManager add_topic: invalid parameter type (topic) = {type(topic)}'
-        assert isinstance(message_cls, type), f'TopicManager add_topic: invalid parameter type (message_cls) - requires a ros2 visualization message class'
-        assert message_cls in (Marker, MarkerArray, PointCloud2), f'TopicManager add_topic: invalid parameter value (message_cls) must be visualization.msgs'
+        assert isinstance(message_cls, type), 'TopicManager add_topic: invalid parameter type (message_cls) - requires a ros2 visualization message class'
+        assert message_cls in (Marker, MarkerArray, PointCloud2), 'TopicManager add_topic: invalid parameter value (message_cls) must be visualization.msgs'
         if topic in self.topics_dict:
-            raise ValueError(f'invalid parameter (topic): the topic already used')
+            raise ValueError('invalid parameter (topic): the topic already used')
         # set qos_profile
         qos_profile = self._default_qos_profile if qos_profile is None else qos_profile
         # create publisher
@@ -614,7 +616,7 @@ class PublishTopicManager():
         :raises ValueError: the topic is not recognized
         """
         if topic not in self.topics_dict:
-            raise ValueError(f'invalid parameter (topic): the topic not exists')
+            raise ValueError('invalid parameter (topic): the topic not exists')
         message_cls, pub = self.topics_dict[topic]
         # delete from topics_dict
         del self.topics_dict[topic]
@@ -656,7 +658,7 @@ class PublishTopicManager():
         :return: the publisher
         :rtype: Publisher
         """
-        message_cls, pub = self.topics_dict[topic]
+        _, pub = self.topics_dict[topic]
         return pub
 
     @synchronized
@@ -668,12 +670,12 @@ class PublishTopicManager():
         :return: the message type, which may be Marker, MarkerArray or PointCloud2
         :rtype: type
         """
-        message_cls, pub = self.topics_dict[topic]
+        message_cls, _ = self.topics_dict[topic]
         return message_cls    
 
 # A helper dataclass for the management of object messages in RvizVisualizer
 @dataclass
-class RvizObjectModel():
+class RvizObjectModel:
     """ A helper dataclass for the management of object messages in RvizVisualizer
         :meta private:
     """
@@ -687,7 +689,7 @@ class RvizObjectModel():
 
 # A helper dataclass for the management of custom TF in RvizVisualizer
 @dataclass
-class RvizCustomTFModel():
+class RvizCustomTFModel:
     """ A helper dataclass for the management of custom TF in RvizVisualizer
         :meta private:
     """
@@ -698,7 +700,7 @@ class RvizCustomTFModel():
     pose_linked_marker: bool = False        # the pose is linked to a Marker and therefore updated through the Marker
     linked_marker: Marker = None            # the linked marker 
 
-class RvizMarkerPublisher():
+class RvizMarkerPublisher:
     """ A publisher of markers, which handles persistent markers, which is published repeatedly and temporary markers,
         which are published once.
     """
@@ -786,7 +788,7 @@ class RvizMarkerPublisher():
         return None
 
     # internal function to return the ros time in seconds as a float
-    def _get_ros_time_in_seconds(self, offset:float=None) -> float:
+    def _get_ros_time_in_seconds(self, offset:float|None=None) -> float:
         """ internal function 
         :meta private:
         """
@@ -872,13 +874,13 @@ class RvizMarkerPublisher():
             custom_tf: RvizCustomTFModel
             for custom_tf in self.tfs_dict.values():
                 # the pose may be coming from a Marker object if this is linked to the Marker
-                transform_stamp:TransformStamped = self._pub_transform(custom_tf.frame_id, custom_tf.pose, custom_tf.parent_frame_id, custom_tf.static_tf)  
+                self._pub_transform(custom_tf.frame_id, custom_tf.pose, custom_tf.parent_frame_id, custom_tf.static_tf)  
                 if custom_tf.static_tf:
                     del self.tfs_dict[custom_tf.frame_id]
 
 
     # internal function: publish the transform of a specific named object
-    def _pub_transform(self, frame_id:str, pose:Pose, parent_frame_id:str=None, static_tf:bool=False) -> TransformStamped:
+    def _pub_transform(self, frame_id:str, pose:Pose, parent_frame_id:str|None=None, static_tf:bool=False) -> TransformStamped:
         """ internal function to publish the transform of an object
         :meta private:
         :param frame_id: frame name of the transform
@@ -900,8 +902,8 @@ class RvizMarkerPublisher():
             parent_frame_id = pose.header.frame_id
             pose_stamped = pose
         else:
-            logger.warning(f'(_pub_transform) parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
-            raise TypeError(f'A parameter is invalid')
+            logger.warning('(_pub_transform) parameter (pose) is not list of length 6 or 7 or a Pose object -> fix the parameter at behaviour construction')
+            raise TypeError('A parameter is invalid')
         # create the TransformStamped
         transform_stamp:TransformStamped = pose_tools.pose_stamped_to_transform_stamped(pose_stamped, frame_id)
         if static_tf:
@@ -923,7 +925,7 @@ class RvizMarkerPublisher():
             return self.default_pointcloud_topic
         return None
 
-    def activate_topic(self, topic:str, message_cls:type, qos_profile:QoSProfile=None) -> None:
+    def activate_topic(self, topic:str, message_cls:type, qos_profile:QoSProfile|None=None) -> None:
         """ Activate a topic by creating a publisher to associated with the given message class on the given topic
 
         :param topic: the new topic
@@ -945,7 +947,7 @@ class RvizMarkerPublisher():
         """
         self.topic_manager.delete_topic(topic)
 
-    def publish_and_cache(self, the_object:Marker|MarkerArray|PointCloud2, topic:str=None, pub_tf:bool=False, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
+    def publish_and_cache(self, the_object:Marker|MarkerArray|PointCloud2, topic:str|None=None, pub_tf:bool=False, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
         """ Publish an object to rviz and again if auto-refresh is True
 
         :param the_object: A object to be published
@@ -975,7 +977,7 @@ class RvizMarkerPublisher():
                 self.cached_objects_queue.append(RvizObjectModel(the_object=the_object, topic=topic, update_stamp=update_stamp))
         return the_object
             
-    def publish(self, the_object:Marker|MarkerArray|PointCloud2, topic:str=None, delay:float=None, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
+    def publish(self, the_object:Marker|MarkerArray|PointCloud2, topic:str|None=None, delay:float=0, update_stamp:bool=True) -> Marker|MarkerArray|PointCloud2:
         """ Add an once-only marker, which is to be published only once
 
         :param marker: A marker to be published only once
@@ -1007,7 +1009,7 @@ class RvizMarkerPublisher():
 
         one_shot_timer = self._node.create_timer(0.0, execute_once)
         
-    def publish_custom_tf(self, frame_id:str, parent_frame_id:str, pose:Pose, static_tf:bool=False, linked_marker:Marker=None) -> None:
+    def publish_custom_tf(self, frame_id:str, parent_frame_id:str, pose:Pose, static_tf:bool=False, linked_marker:Marker|None=None) -> None:
         """ Add a custom transform to the rviz visualizer, which is broadcast regularly
 
         :param frame_id: the name of the transform
@@ -1017,7 +1019,7 @@ class RvizMarkerPublisher():
         :param linked_marker: link this transform to the pose of a Marker and so when the pose of the Marker is updated so is this transform
         """
         if frame_id is None or parent_frame_id is None or pose is None:
-            raise AssertionError(f'RvizVisualizer (add_custom_tf): No parameter can be None')
+            raise AssertionError('RvizVisualizer (add_custom_tf): No parameter can be None')
         # if linked_marker is given, then the pose of the Marker is used instead of the input parameter
         if isinstance(linked_marker, Marker):    
             self.tfs_dict[frame_id] = RvizCustomTFModel(static_tf=static_tf, frame_id=frame_id, parent_frame_id=parent_frame_id, pose=linked_marker.pose, 
@@ -1063,9 +1065,8 @@ class RvizMarkerPublisher():
         else:
             self.publish(the_object, delay=0.0)
         # remove tf_frame if defined
-        if object_model is not None:
-            if object_model.tf_frame_id in self.tfs_dict:
-                del self.tfs_dict[object_model.tf_frame_id]
+        if object_model is not None and object_model.tf_frame_id in self.tfs_dict:
+            del self.tfs_dict[object_model.tf_frame_id]
 
     # internal function to create delete all message for marker_array deletion 
     def _delete_marker_array(self, the_object:MarkerArray):
@@ -1086,7 +1087,7 @@ class RvizMarkerPublisher():
         else:
             self.publish(_create_empty_pointcloud(), delay=0.0)     
             
-    def delete_cached_objects_by_topics(self, topics_list:list=None) -> None:
+    def delete_cached_objects_by_topics(self, topics_list:list|str|None=None) -> None:
         """ delete all objects from rviz, optionally only the topics in the topics_list
 
         :param topics_list: the topics included, defaults to None (all default topics)
@@ -1105,7 +1106,7 @@ class RvizMarkerPublisher():
                 if object_model.topic in topics_list:
                     self.delete_object(object_model.the_object)
 
-    def delete_all_objects_by_topics(self, topics_list:list[str]=None) -> None:
+    def delete_all_objects_by_topics(self, topics_list:list|str|None=None) -> None:
         """ attempt to clear old objects by sending DELETE_ALL messages to the topics
 
         :param topics_list: the list of topics to send DELETE_ALL messages, defaults to None (the default topics)
@@ -1153,7 +1154,7 @@ class RvizMarkerPublisher():
             try:
                 subscriptions = self._node.get_subscriber_names_and_types_by_node(node_name, node_ns)
                 return {topic: message_names_list for topic, message_names_list in subscriptions}
-            except Exception as e:
+            except (NodeNameNonExistentError, RuntimeError):
                 ...
         return None
         

@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 # Copyright 2025 - Andrew Kwok Fai LUI
 # Robotics and Autonomous Systems Group, REF, RI
 # Queensland University of Technology
@@ -11,9 +9,10 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import os, logging, time
+import logging
+import os
+import time
 
-import numpy as np
 import pandas as pd
 
 LOGLEVEL_VARNAME = 'GLOBAL_LOGLEVEL'
@@ -60,7 +59,7 @@ class CustomFormatter(logging.Formatter):
         return repr(result)
 
 # internal function that intializes the logger
-def get_logger(name='global', level:int=logging.INFO, silent:bool=False, logging_file:str=None, logging_file_level:int=None) -> logging.Logger:
+def get_logger(name='global', level:int=logging.INFO, silent:bool=False, logging_file:str|None=None, logging_file_level:int|None=None) -> logging.Logger:
     """
     Create or get an existing logger givne the name and optionally the level, slient mode, and whether the log is written to a file.
 
@@ -98,11 +97,11 @@ def get_logger(name='global', level:int=logging.INFO, silent:bool=False, logging
             logger.addHandler(fh)
     return logger
 
-class TimeLogger():
+class TimeLogger:
     def __init__(self):
         self.start_time = time.time()
         self.logged_time_list = []
-        self.logged_time_dict = dict()
+        self.logged_time_dict = {}
         self.logged_time_names_list = []
     
     def take(self, name:str):
@@ -117,7 +116,7 @@ class TimeLogger():
     def append_results_to_csv(self, id, csv_file):
         try:
             data_df:pd.DataFrame = pd.read_csv(csv_file, index_col=False)
-        except:
+        except OSError:
             data_df = None
 
         if data_df is None:
@@ -130,7 +129,7 @@ class TimeLogger():
         try:
             data_df.to_csv(csv_file, index=False)
             # print(f'saved timing file to {csv_file}')
-        except:
+        except OSError:
             print(f'failed to write to csv: {csv_file}')
 
 
@@ -139,7 +138,7 @@ logger = get_logger()
 
 if __name__ == '__main__':
     # print messages to remind developers of the environment variables
-    logger.info(f'-----------------------------------------------------------------------------------------------------------------------------------------')
+    logger.info('-----------------------------------------------------------------------------------------------------------------------------------------')
     logger.info(f'(logging tool) starts logging for a new process (pid: {os.getpid()}) ')
     logger.info(f'(logging tool) environment variable {LOGLEVEL_VARNAME}: {os.environ.get(LOGLEVEL_VARNAME, "")}')
     logger.info(f'(logging tool) environment variable {LOGFILE_VARNAME}: {os.environ.get(LOGFILE_VARNAME, "")}')

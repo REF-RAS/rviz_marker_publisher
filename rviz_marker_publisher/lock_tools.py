@@ -7,10 +7,9 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import threading
 from threading import Lock, RLock
-from wrapt.wrappers import FunctionWrapper, ObjectProxy
-from wrapt.decorators import decorator
+
+from wrapt.wrappers import FunctionWrapper
 
 # Reference: https://wrapt.readthedocs.io/en/latest/examples.html
 
@@ -46,7 +45,7 @@ def synchronized(wrapped):
 
                 if lock is None:
                     lock = RLock()
-                    setattr(context, '_synchronized_lock', lock)
+                    context._synchronized_lock = lock
 
         return lock
 
@@ -71,7 +70,7 @@ def synchronized(wrapped):
     return _FinalDecorator(wrapped=wrapped, wrapper=_synchronized_wrapper)
 
 if __name__ == '__main__':
-    class Class(object):
+    class Class:
         @synchronized
         @classmethod
         def function_cm(cls):
@@ -91,7 +90,7 @@ if __name__ == '__main__':
         pass
 
     @synchronized # lock bound to Class
-    class Class(object):
+    class Class:
         @synchronized # lock bound to instance of Class
         def function_im(self):
             pass
