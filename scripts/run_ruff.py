@@ -3,6 +3,14 @@ import sys
 from pathlib import Path
 import pytest
 
+"""Format and lint folders of python source files using the following tools.
+
+    F (Pyflakes): Catches pure logic errors, unused imports, undefined names, and syntax problems.
+    E (pycodestyle - Error): Catches stylistic errors and PEP 8 style guideline violations (such as indentation or spacing issues).
+    W (pycodestyle - Warning): Catches minor style warnings that are less severe than errors.
+    D (pydocstyle): Checks docstring conventions and formatting inside modules, classes, and functions.
+"""
+
 def format_and_lint_folders(folders_list: list[str]) -> None:
     """Auto-format line lengths and lint selected folders using Ruff."""
     print(f"Starting Ruff processing on: {', '.join(folders_list)}\n")
@@ -19,7 +27,7 @@ def format_and_lint_folders(folders_list: list[str]) -> None:
         # 'ruff format' splits long expressions, wraps lines, and cleans layout
         format_command = [
             'ruff', 'format', str(path),
-            '--line-length', '160'  # Sets max allowed line limit (Default is 88)
+            '--line-length', '200'  # Sets max allowed line limit (Default is 88)
         ]
         subprocess.run(format_command, capture_output=True, text=True)
 
@@ -29,7 +37,7 @@ def format_and_lint_folders(folders_list: list[str]) -> None:
         check_command = [
             'ruff', 'check', str(path),
             '--select', 'E,W,F,D',
-            '--line-length', '160',
+            '--line-length', '200',
             '--fix'  # Autofixes other fixable lint errors automatically
         ]
         result = subprocess.run(check_command, capture_output=True, text=True)

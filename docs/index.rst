@@ -1,5 +1,5 @@
-RASG Engineering Support for Research
-=======================================
+QUT REF RASG Engineering Support for Research
+===============================================
 
 .. include:: README.md
    :parser: myst_parser.sphinx_

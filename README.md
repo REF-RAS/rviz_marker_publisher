@@ -8,8 +8,9 @@
 ![Visualization Topic](https://badgen.net/badge/topic/Visualization/orange?icon=github)
 [![License: BSD NON-AI](https://badgen.net/badge/license/BSD-3%20NON-AI?icon=github)](https://github.com/non-ai-licenses/non-ai-licenses/blob/main/NON-AI-BSD3)
 
-[![Docker Compose Build and Deploy](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/docker-build.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/docker-build.yml)
-[![Build Sphinx and Deploy](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/sphinx.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_tools/actions/workflows/sphinx.yml)
+[![Docker Compose Build and Push](https://github.com/REF-RAS/rviz_marker_publisher/actions/workflows/docker-build-and-push.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_publisher/actions/workflows/docker-build-and-push.yml)
+[![Colcon Test Package in Container](https://github.com/REF-RAS/rviz_marker_publisher/actions/workflows/colcon-test-docker.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_publisher/actions/workflows/colcon-test-docker.yml)
+[![Build Sphinx and Deploy](https://github.com/REF-RAS/rviz_marker_publisher/actions/workflows/sphinx.yml/badge.svg)](https://github.com/REF-RAS/rviz_marker_publisher/actions/workflows/sphinx.yml)
 
 ## Introduction
 

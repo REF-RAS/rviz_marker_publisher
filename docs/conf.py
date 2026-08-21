@@ -14,19 +14,18 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src/rviz_marker_publisher'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src/examples'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src'))
 
 # -- Project information -----------------------------------------------------
 
-project = 'RViz Marker Publisher for ROS2'
-copyright = '2026, Andrew Lui'
+project = 'RViz Marker Publisher for ROS2 (v0.1)'
+copyright = '2026, Andrew Lui, RASG, Research Engineering Facility, QUT'
 author = 'Andrew Lui'
 
 # The short X.Y version
-version = ''
+version = '0.1'
 # The full version, including alpha/beta/rc tags
-release = '0.1'
+release = '0.1.0'
 
 
 # -- General configuration ---------------------------------------------------
@@ -46,8 +45,9 @@ extensions = [
 myst_all_links_external = False
 
 autodoc_mock_imports = ['rclpy', 'geometry_msgs', 'tf', 'tf2_msgs', 'std_msgs', 'sensor_msgs', 'visualization_msgs',
-                        'actionlib_msgs', 'controller_manager_msgs', 'tf_transformations',
-                        'cv2', 'numpy', 'pandas']
+                        'actionlib_msgs', 'tf_transformations', 'tf2_ros', 
+                        'sensor_msgs_py',
+                        'cv2', 'numpy', 'pandas', 'wrapt']
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ['_templates']

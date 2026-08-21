@@ -39,11 +39,13 @@ services:
     ros2-test:
         extends: 
             service: ros2
-        working_dir: ~/ros2_ws
+        container_name: ros2-test
+        working_dir: /workspace/ros2_ws
         environment:
             - GITHUB_ACTIONS=true
         volumes:
-            - .:/workspace/ros2_ws/src/rviz_marker_publisher:rw
+            # the working directory is docker, so .. going back to the repository root
+            - ${GITHUB_WORKSPACE}:/workspace/ros2_ws/src/rviz_marker_publisher:rw 
 
     # service: moveit2 image is based on FROM moveit/moveit2:jazzy-release
     moveit2:

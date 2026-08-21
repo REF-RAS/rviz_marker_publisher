@@ -21,10 +21,12 @@ jobs:
       - name: Inactivaate and delete deployments
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
         run: |
           # 1. Fetch all deployment IDs for the current repository
           echo "Fetching deployments..."
-          DEPLOYMENTS=$(gh api repos/${{ github.repository }}/deployments --paginate -q '.[].id')
+          DEPLOYMENTS=$(gh api repos/$OWNER/$REPO/deployments --paginate -q '.[].id')
 
           if [ -z "$DEPLOYMENTS" ]; then
             echo "No deployments found."
@@ -35,18 +37,17 @@ jobs:
           for DEPLOYMENT_ID in $DEPLOYMENTS; do
             echo "Processing Deployment ID: $DEPLOYMENT_ID"
             
-            # Formulate the API URL for this specific deployment
-            API_URL="repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID"
-            
             # Step A: Inactivate the deployment by setting its status to 'inactive'
-            # (GitHub requires a deployment to be inactive or have no active statuses before deletion)
-            gh api repos/$API_URL/deployments/$id/statuses \
-               -X POST -H "Accept: application/vnd.github.ant-man-preview+json" -f state='inactive' \
-               --silent || true; 
+            # Note: The gh api command automatically fills in the domain, just start with /repos
+            gh api "/repos/$OWNER/$REPO/deployments/$DEPLOYMENT_ID/statuses" \
+              -X POST \
+              -H "Accept: application/vnd.github.ant-man-preview+json" \
+              -F state="inactive" \
+              --silent || true
             
             # Step B: Delete the deployment record
             echo "Deleting Deployment ID: $DEPLOYMENT_ID..."
-            gh api repos/$API_URL/deployments/$id -X DELETE;
+            gh api "/repos/$OWNER/$REPO/deployments/$DEPLOYMENT_ID" -X DELETE
           done
           
           echo "Cleanup complete!"

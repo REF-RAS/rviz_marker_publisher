@@ -22,17 +22,21 @@ The repository is structured as a ROS2 package as well as a Python package.
 ├──├── compose.yaml             # the docker compose yml file 
 ├──├── Dockerfile.moveit2_uv    # the dockerfile for building moveit2 image
 ├──├── Dockerfile.ros2_uv       # the dockerfile for building ros2 image
-├──├──├ assets                   # the files used by the build process of the dockerfiles 
-├── docs                        # documentation and media assets
-├── examples                            # python script examples illustrating the rviz_marker_publisher package
-├──├── assets                           # the resource files for the examples
+├──├──├ assets                  # the files used by the build process of the dockerfiles 
+├── docs                        # documentation and media assets including build files for sphinx documentation
+├──├── images                   # images used in the documentation
 ├── launch                      # ros2 launch files for this package
 ├── resource                        # ros2 resource folder for the marker file
-├── rviz_marker_publisher           # the python source files for the rviz_marker_publisher package
+├── scripts                         # tools for management of the source 
+├── src                             # the package source files
+├──├──  examples                       # python script examples illustrating the rviz_marker_publisher package
+├──├──├── assets                       # the resource files for the examples
+├──├── rviz_marker_publisher           # the python source files for the rviz_marker_publisher package
+├── test                            # contains files for colcon test
 ├ package.xml                 # the ros2 package.xml file
 ├ README.md                   # the README file
-├ setup.cfg                 # to specify the install script locations
-├ setup.py                  # the python package setup file
+├ setup.cfg                   # to specify the install script locations
+├ setup.py                    # the python package setup file
 
 ``` 
 

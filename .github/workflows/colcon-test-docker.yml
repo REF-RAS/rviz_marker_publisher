@@ -8,11 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
+  spin-up-and-test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write 
+      checks: write
+      id-token: write
 
     environment:
       name: docker-image
@@ -27,24 +29,42 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v5
 
+      - name: Log in to GHCR
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create Folder for Binding Results
+        run: mkdir -m 777 -p $GITHUB_WORKSPACE/log
+
+      - name: Pull Docker Image
+        run: |
+          docker pull ghcr.io/ref-ras/ros2:latest
+
       # spin up docker compose service ros2 and execute colcon test
       - name: Execute Colcon Tests
         run: |
           docker compose run --rm ros2-test bash -c "
             source /opt/ros/\$ROS_DISTRO/setup.bash &&
-            sudo uv pip install pytest-github-actions-annotate-failures &&
+            cd /workspace/ros2_ws &&
             colcon build &&
+            source install/setup.bash &&
             colcon test --event-handlers console_cohesion+ &&
-            colcon test-result --all
+            colcon test-result --all &&
+            sudo cp /workspace/ros2_ws/build/rviz_marker_publisher/pytest.xml /workspace/ros2_ws/src/rviz_marker_publisher
           "
       # publish test report
       - name: Publish Test Report Dashboard
-        uses: mikepenz/action-junit-report@v4
-        if: always() # ensures the UI loads even if tests fail
+        uses: mikepenz/action-junit-report@v6
+        if: success() || failure() # always run even if the previous step fails
         with:
-          report_paths: 'build/**/test_results/**/*.xml' # path where colcon stores pytest XML reports
+          # report_paths: '**/build/test-results/test/TEST-*.xml'
+          report_paths: '**/pytest.xml'
 
       # clean up resources to prevent leaks
       - name: Tear Down Containers
         if: always()
-        run: docker compose down --volumes
+        run: |
+          docker compose down --volumes
