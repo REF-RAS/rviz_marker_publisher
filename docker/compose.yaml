@@ -39,7 +39,7 @@ services:
     ros2-test:
         extends: 
             service: ros2
-        working_dir: ~/ros2_ws
+        working_dir: /workspace/ros2_ws
         environment:
             - GITHUB_ACTIONS=true
         volumes:

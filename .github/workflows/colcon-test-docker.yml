@@ -8,11 +8,13 @@ on:
   workflow_dispatch:
 
 jobs:
-  build-and-push:
+  spin-up-and-test:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       packages: write 
+      checks: write
+      id-token: write
 
     environment:
       name: docker-image
@@ -39,10 +41,10 @@ jobs:
           "
       # publish test report
       - name: Publish Test Report Dashboard
-        uses: mikepenz/action-junit-report@v4
-        if: always() # ensures the UI loads even if tests fail
+        uses: mikepenz/action-junit-report@v6
+        if: success() || failure() # always run even if the previous step fails
         with:
-          report_paths: 'build/**/test_results/**/*.xml' # path where colcon stores pytest XML reports
+          report_paths: '**/build/test-results/test/TEST-*.xml'
 
       # clean up resources to prevent leaks
       - name: Tear Down Containers
