@@ -68,17 +68,6 @@ jobs:
 
       # push using the image name defined in docker-compose.yml, only runs when code is merged to main
       - name: Push image with Docker Compose to GHCR
-        if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
+        # if: ${{ github.ref == 'refs/heads/main' && github.event_name != 'pull_request' }}
         run: docker compose push ${{ inputs.docker_image }}
 
-  cleanup-old-images:
-    needs: build-and-push
-    runs-on: ubuntu-latest
-    permissions:
-      packages: write
-    steps:
-      - name: Purge untagged images
-        uses: dataaxiom/ghcr-cleanup-action@v1
-        with:
-          keep-n-untagged: 0 
-          dry-run: false
