@@ -45,7 +45,9 @@ jobs:
         run: |
           docker compose run --rm ros2-test bash -c "
             source /opt/ros/\$ROS_DISTRO/setup.bash &&
+            cd /workspace/ros2_ws &&
             colcon build &&
+            source install/setup.bash &&
             colcon test --event-handlers console_cohesion+ &&
             colcon test-result --all
           "
