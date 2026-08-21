@@ -1,5 +1,5 @@
-RASG Engineering Support for Research: RViz Marker Publisher
-================================================================
+RASG Engineering Support for Research
+=======================================
 
 .. include:: README.md
    :parser: myst_parser.sphinx_

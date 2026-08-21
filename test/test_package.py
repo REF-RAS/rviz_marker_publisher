@@ -137,7 +137,7 @@ def test_create_marker_array_pointcloud(ros_init):
     marker_array = rviz_marker_publisher.create_marker_array(markers_list)
     rv.publish_and_cache(marker_array)
     # create pointcloud from image
-    image_file = os.path.join('/workspace/ros2_ws/src/rviz_marker_publisher', 'examples/assets/CoralFish.png')   
+    image_file = os.path.join('/workspace/ros2_ws/src/rviz_marker_publisher', 'src/examples/assets/CoralFish.png')   
     image_bgr = cv2.imread(image_file)
     image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
     rv.publish(image_pointcloud2)
@@ -228,7 +228,7 @@ def test_new_topic(ros_init):
     marker_array = rviz_marker_publisher.create_marker_array(markers_list)
     rv.publish_and_cache(marker_array, topic='rviz_marker_array')
     # create pointcloud from image
-    image_file = os.path.join('/workspace/ros2_ws/src/rviz_marker_publisher', 'examples/assets/CoralFish.png')   
+    image_file = os.path.join('/workspace/ros2_ws/src/rviz_marker_publisher', 'src/examples/assets/CoralFish.png')   
     image_bgr = cv2.imread(image_file)
     image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
     rv.publish(image_pointcloud2, topic='rviz_pointcloud')
@@ -276,12 +276,13 @@ def test_tf(ros_init):
     rv.publish(cube_marker_1)    
     # wait
     time.sleep(5.0)
+    # delete the marker-linked tf
+    rv.delete_object(axis_plane_marker_xy)
+    # wait
+    time.sleep(5.0)
     # destroy the node
     the_node.destroy_node()    
     time.sleep(1)    
 
 # colcon test --packages-select rviz_marker_publisher --pytest-args "-s" --event-handlers console_cohesion+
 # colcon test-result --all --verbose
-
-if __name__ == '__main__':
-    test()

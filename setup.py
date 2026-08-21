@@ -15,15 +15,6 @@ from setuptools.command.build_py import build_py
 # colcon build --symlink-install --packages-select rviz_marker_publisher --event-handlers console_stderr+
 # colcon build --symlink-install --event-handlers console_direct+ 
 
-PACKAGE_NAME = 'rviz_marker_publisher'
-INSTALL_REQUIRES = [
-    'opencv_python',
-    'wrapt<2.0.0',
-    'numpy<=2',
-    'pandas',
-    'ruff',
-]
-EXTRA_REQUIRES = {}
 
 # custom build step to force uv to run before compiling the package
 class UVInstallThenBuild(build_py):
@@ -70,32 +61,51 @@ class UVInstallThenBuild(build_py):
         except FileNotFoundError:
             return False
 
-
-def find_console_scripts(folders_list):
+def find_console_scripts(console_script_folders_list:list[dict]):
     # parent_folder = get_package_share_directory(PACKAGE_NAME)
-    if isinstance(folders_list, str):
-        folders_list = [folders_list]
+    if isinstance(console_script_folders_list, dict):
+        console_script_folders_list = [console_script_folders_list]
     scripts = []
-    for folder in folders_list:
-        # Walk through the directory and subfolders
-        for root, dirs, files in os.walk(folder):
-            for file in files:
-                # Check for python files, excluding __init__.py
-                if file.endswith('.py') and file != '__init__.py':
-                    # buid the module path in the format my_package.subfolder.script
-                    rel_path = os.path.relpath(os.path.join(root, file), '.')
-                    module_path = rel_path.replace(os.path.sep, '.')[:-3]
-                    # create a command name 'command_name = module.path:main_function'
-                    # script_name = file[:-3].replace('_', '-')
-                    script_name = file[:-3]
-                    scripts.append(f'{script_name} = {module_path}:main')
+    for folder_spec in console_script_folders_list:
+        source = folder_spec['source']
+        folder_list = folder_spec.get('include', [])
+        if isinstance(folder_list, str):
+            folder_list = [folder_list]
+        for folder in folder_list:
+            # Walk through the directory and subfolders
+            for root, dirs, files in os.walk(os.path.join(source, folder)):
+                for file in files:
+                    # Check for python files, excluding __init__.py
+                    if file.endswith('.py') and file != '__init__.py':
+                        # buid the module path in the format my_package.subfolder.script
+                        rel_path = os.path.relpath(os.path.join(root, file), source)
+                        module_path = rel_path.replace(os.path.sep, '.')[:-3]
+                        # create a command name 'command_name = module.path:main_function'
+                        # script_name = file[:-3].replace('_', '-')
+                        script_name = file[:-3]
+                        scripts.append(f'{script_name} = {module_path}:main')
     return scripts
 
+# results = find_console_scripts([dict(source='src', include='examples')])
+# print(f'find_console_scripts: {results}', file=sys.stderr)
+
+# results = find_packages(where='src', include=['rviz_marker_publisher', 'examples'])
+# print(f'find_packages: {results}', file=sys.stderr)
+
+PACKAGE_NAME = 'rviz_marker_publisher'
+INSTALL_REQUIRES = [
+    'opencv_python',
+    'wrapt<2.0.0',
+    'numpy<=2',
+    'pandas',
+    'ruff',
+]
 
 setup(
     name=PACKAGE_NAME,
     version='0.1.0',
-    packages=find_packages(exclude=['test']),
+    packages=find_packages(where='src', include=['rviz_marker_publisher', 'examples']),
+    package_dir={'': 'src'},
     cmdclass={
         'build_py': UVInstallThenBuild,  # inject the custom UV step
     },
@@ -104,7 +114,7 @@ setup(
         ('share/' + PACKAGE_NAME, ['package.xml']),
         (os.path.join('share', PACKAGE_NAME, 'launch'), glob.glob(os.path.join('launch', '*launch.[pxy][yma]*'))),
         (os.path.join('share', PACKAGE_NAME, 'config'), glob.glob(os.path.join('config', '*'))),
-        (os.path.join('share', PACKAGE_NAME, 'examples', 'assets'), glob.glob(os.path.join('examples', 'assets', '*'))),
+        (os.path.join('share', PACKAGE_NAME, 'examples', 'assets'), glob.glob(os.path.join('src', 'examples', 'assets', '*'))),
     ],
     install_requires=INSTALL_REQUIRES,
     zip_safe=True,
@@ -112,10 +122,10 @@ setup(
     maintainer_email='ak.lui@qut.edu.au',
     description='The RViz Marker Tools for ROS2',
     license='NON AI BSD-3',
-    extras_require=EXTRA_REQUIRES,
-    entry_points={
-        'console_scripts': find_console_scripts(['examples']),
-        # 'console_scripts': 'display_info = examples.move.display_info:main',
+    extras_require={                                    # extras_require instead of tests_require in new setuptools version
+        'test': ['pytest'],
     },
-    tests_require=['pytest'],
+    entry_points={
+        'console_scripts': find_console_scripts([dict(source='src', include='examples')]),
+    },
 )

@@ -14,8 +14,8 @@
 #
 import os
 import sys
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../rviz_marker_publisher'))
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../examples'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src/rviz_marker_publisher'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '../src/examples'))
 
 # -- Project information -----------------------------------------------------
 

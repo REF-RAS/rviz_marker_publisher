@@ -41,7 +41,7 @@ def main():
     # add an image as a pointcloud
     logger.info(f'(add) create_pointcloud_from_image CoralFish.png')
     # NOTE: the image file is in one of the resource folder (examples) defined in setup.py
-    image_file = os.path.join(get_package_share_directory('rviz_marker_publisher'), 'examples/assets/CoralFish.png')   
+    image_file = os.path.join(get_package_share_directory('rviz_marker_publisher'), 'src/examples/assets/CoralFish.png')   
     image_bgr = cv2.imread(image_file)
     image_pointcloud2:PointCloud2 = rviz_marker_publisher.create_pointcloud_from_image(image_bgr, (0, 0.5, 0), pixel_physical_size=[0.002, 0.002, -1], frame_id='map')
     rv.publish(image_pointcloud2)

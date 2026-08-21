@@ -1,16 +1,12 @@
 name: Docker Compose Build and Push
 
 on:
-  # push:
-  #   branches: [ main ]
-  # pull_request:
-  #   branches: [ main ]
   workflow_dispatch:
     inputs:
       environment:
         description: 'Target Environment'
         required: true
-        default: 'production'
+        default: 'docker-image'
 
 jobs:
   build-and-push:
@@ -20,7 +16,7 @@ jobs:
       packages: write 
 
     environment:
-      name: production
+      name: docker-image
       deployment: false
 
     defaults:

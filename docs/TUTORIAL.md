@@ -4,7 +4,7 @@
 **Queensland University of Technology**
 
 ![QUT REF Collection](https://badgen.net/badge/collections/QUT%20REF-RAS?icon=github) 
-![ROS2 Package Category](https://badgen.net/badge/category/ROS1%20Package/purple?icon=github)
+![ROS2 Package Category](https://badgen.net/badge/category/ROS2%20Package/purple?icon=github)
 ![Visualization Topic](https://badgen.net/badge/topic/Visualization/orange?icon=github)
 [![License: BSD NON-AI](https://badgen.net/badge/license/BSD-3%20NON-AI?icon=github)](https://github.com/non-ai-licenses/non-ai-licenses/blob/main/NON-AI-BSD3)
 
