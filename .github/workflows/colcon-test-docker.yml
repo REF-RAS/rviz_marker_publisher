@@ -53,7 +53,7 @@ jobs:
             source install/setup.bash &&
             colcon test --event-handlers console_cohesion+ &&
             colcon test-result --all &&
-            sudo cp -r /workspace/ros2_ws/log /workspace/ros2_ws/src/rviz_marker_publisher
+            sudo cp /workspace/ros2_ws/build/rviz_marker_publisher/pytest.xml /workspace/ros2_ws/src/rviz_marker_publisher
           "
       # publish test report
       - name: Publish Test Report Dashboard
@@ -61,7 +61,7 @@ jobs:
         if: success() || failure() # always run even if the previous step fails
         with:
           # report_paths: '**/build/test-results/test/TEST-*.xml'
-          report_paths: '**/log/test_*/**/stdout_stderr.xml'
+          report_paths: '**/pytest.xml'
 
       # clean up resources to prevent leaks
       - name: Tear Down Containers
