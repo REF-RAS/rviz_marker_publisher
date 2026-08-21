@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: .
+        working-directory: ./docker
 
     steps:
       # fetch the repository code
@@ -43,7 +43,6 @@ jobs:
       # spin up docker compose service ros2 and execute colcon test
       - name: Execute Colcon Tests
         run: |
-          cd docker &&
           docker compose run --rm ros2-test bash -c "
             source /opt/ros/\$ROS_DISTRO/setup.bash &&
             cd /workspace/ros2_ws &&
