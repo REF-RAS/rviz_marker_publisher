@@ -1,0 +1,90 @@
+# Copyright 2026 - Andrew Kwok Fai LUI, Robotics and Autonomous System Group,
+# Research Engineering Facility, RI
+# the Queensland University of Technology
+
+services:
+    # service: ros2 image is based on osrf/ros:${ROS_DISTRO}-desktop-full
+    ros2:
+        build:
+            context: .
+            dockerfile: Dockerfile.ros2_uv
+            args: 
+                ROS_DISTRO: jazzy
+                USER: ubuntu
+                HOST_UID:
+                HOST_GID:
+                # HOME:                     # default is /workspace
+        # user: qcr:qcr    
+        image: ghcr.io/ref-ras/ros2
+        container_name: ros2
+        # working_dir: 
+        stdin_open: true
+        tty: true
+        privileged: true
+        network_mode: host
+        ipc: host
+        # ports:
+        # - '8100:8100' # map host port 8000 to container port 8000
+        environment:
+            - DISPLAY
+            - QT_X11_NO_MITSHM=1
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix:rw
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro 
+            - ~/ros2_ws/src/rviz_marker_publisher:/workspace/ros2_ws/src/rviz_marker_publisher:rw  
+            # - ~/ros2_ws/src/pymoveit2:/app/ros2_ws/src/pymoveit2:rw                    
+        command: bash
+    
+    ros2-test:
+        extends: 
+            service: ros2
+        working_dir: ~/ros2_ws
+        environment:
+            - GITHUB_ACTIONS=true
+        volumes:
+            - .:/workspace/ros2_ws/src/rviz_marker_publisher:rw
+
+    # service: moveit2 image is based on FROM moveit/moveit2:jazzy-release
+    moveit2:
+        build:
+            context: .
+            dockerfile: Dockerfile.moveit2_uv
+            args: 
+                USER: ubuntu
+                HOST_UID:
+                HOST_GID:
+                # HOME:                     # default is /workspace
+        # user: qcr:qcr    
+        image: ghcr.io/ref-ras/moveit2
+        container_name: moveit2
+        # working_dir: 
+        stdin_open: true
+        tty: true
+        privileged: true
+        network_mode: host
+        ipc: host
+        # ports:
+        # - '8100:8100' # map host port 8000 to container port 8000
+        environment:
+            - DISPLAY
+            - QT_X11_NO_MITSHM=1
+        volumes:
+            - /tmp/.X11-unix:/tmp/.X11-unix:rw
+            - /etc/timezone:/etc/timezone:ro
+            - /etc/localtime:/etc/localtime:ro 
+            - ~/ros2_ws/src/rviz_marker_publisher:/workspace/ros2_ws/src/rviz_marker_publisher:rw  
+            # - ~/ros2_ws/src/pymoveit2:/app/ros2_ws/src/pymoveit2:rw                    
+        command: bash
+        # deploy:
+        #     resources:
+        #         reservations:
+        #             devices:
+        #                 - driver: nvidia
+        #                   count: 1
+        #                   capabilities: [gpu]
+
+
+
+       
+           

@@ -1,0 +1,50 @@
+name: Colcon Test Package in Docker Container 
+
+on:
+  # push:
+  #   branches: [ main ]
+  # pull_request:
+  #   branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write 
+
+    environment:
+      name: docker-image
+      deployment: false
+
+    defaults:
+      run:
+        working-directory: ./docker
+
+    steps:
+      # fetch the repository code
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      # spin up docker compose service ros2 and execute colcon test
+      - name: Execute Colcon Tests
+        run: |
+          docker compose run --rm ros2-test bash -c "
+            source /opt/ros/\$ROS_DISTRO/setup.bash &&
+            sudo uv pip install pytest-github-actions-annotate-failures &&
+            colcon build &&
+            colcon test --event-handlers console_cohesion+ &&
+            colcon test-result --all
+          "
+      # publish test report
+      - name: Publish Test Report Dashboard
+        uses: mikepenz/action-junit-report@v4
+        if: always() # ensures the UI loads even if tests fail
+        with:
+          report_paths: 'build/**/test_results/**/*.xml' # path where colcon stores pytest XML reports
+
+      # clean up resources to prevent leaks
+      - name: Tear Down Containers
+        if: always()
+        run: docker compose down --volumes

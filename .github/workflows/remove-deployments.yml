@@ -1,0 +1,52 @@
+name: Remove Deployments
+
+on:
+  # schedule:
+  #   - cron: '0 0 * * 0' # Runs every Sunday at midnight
+  workflow_dispatch: # Allows manual triggering
+
+jobs:
+  clean-deployments:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: read
+      deployments: write
+      statuses: write 
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v5
+
+      - name: Inactivaate and delete deployments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # 1. Fetch all deployment IDs for the current repository
+          echo "Fetching deployments..."
+          DEPLOYMENTS=$(gh api repos/${{ github.repository }}/deployments --paginate -q '.[].id')
+
+          if [ -z "$DEPLOYMENTS" ]; then
+            echo "No deployments found."
+            exit 0
+          fi
+
+          # 2. Loop through each deployment and delete it
+          for DEPLOYMENT_ID in $DEPLOYMENTS; do
+            echo "Processing Deployment ID: $DEPLOYMENT_ID"
+            
+            # Formulate the API URL for this specific deployment
+            API_URL="repos/${{ github.repository }}/deployments/$DEPLOYMENT_ID"
+            
+            # Step A: Inactivate the deployment by setting its status to 'inactive'
+            # (GitHub requires a deployment to be inactive or have no active statuses before deletion)
+            gh api repos/$API_URL/deployments/$id/statuses \
+               -X POST -H "Accept: application/vnd.github.ant-man-preview+json" -f state='inactive' \
+               --silent || true; 
+            
+            # Step B: Delete the deployment record
+            echo "Deleting Deployment ID: $DEPLOYMENT_ID..."
+            gh api repos/$API_URL/deployments/$id -X DELETE;
+          done
+          
+          echo "Cleanup complete!"

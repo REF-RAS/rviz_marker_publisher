@@ -1,0 +1,11 @@
+# common utilities packages 
+pyyaml
+typeguard
+jinja2
+typeguard
+
+# ros2 python packages
+setuptools<80.0.0
+transforms3d
+
+
