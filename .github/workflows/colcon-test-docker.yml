@@ -22,7 +22,7 @@ jobs:
 
     defaults:
       run:
-        working-directory: ./docker
+        working-directory: .
 
     steps:
       # fetch the repository code
@@ -43,6 +43,7 @@ jobs:
       # spin up docker compose service ros2 and execute colcon test
       - name: Execute Colcon Tests
         run: |
+          cd docker &&
           docker compose run --rm ros2-test bash -c "
             source /opt/ros/\$ROS_DISTRO/setup.bash &&
             cd /workspace/ros2_ws &&
@@ -61,4 +62,6 @@ jobs:
       # clean up resources to prevent leaks
       - name: Tear Down Containers
         if: always()
-        run: docker compose down --volumes
+        run: |
+          cd docker &&
+          docker compose down --volumes
