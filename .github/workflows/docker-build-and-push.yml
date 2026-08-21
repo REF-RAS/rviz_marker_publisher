@@ -6,7 +6,6 @@ on:
       docker_image:
         description: 'Docker Image'
         required: true
-        default: 'ros2'
         options:
           - ros2
           - moveit2
