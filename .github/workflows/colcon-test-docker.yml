@@ -36,6 +36,9 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Create Folder for Binding Results
+        run: mkdir -p $GITHUB_WORKSPACE/log
+
       - name: Pull Docker Image
         run: |
           docker pull ghcr.io/ref-ras/ros2:latest
