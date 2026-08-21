@@ -46,6 +46,7 @@ services:
         volumes:
             # the working directory is docker, so .. going back to the repository root
             - ${GITHUB_WORKSPACE}:/workspace/ros2_ws/src/rviz_marker_publisher:rw 
+            - /tmp/log:/workspace/ros2_ws/log:rw
 
     # service: moveit2 image is based on FROM moveit/moveit2:jazzy-release
     moveit2:
