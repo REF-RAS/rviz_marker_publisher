@@ -38,7 +38,7 @@ jobs:
 
       - name: Pull Docker Image
         run: |
-          docker pull ghcr.io/ref-ras/ros2
+          docker pull ghcr.io/ref-ras/ros2:latest
 
       # spin up docker compose service ros2 and execute colcon test
       - name: Execute Colcon Tests
