@@ -45,7 +45,6 @@ jobs:
         run: |
           docker compose run --rm ros2-test bash -c "
             source /opt/ros/\$ROS_DISTRO/setup.bash &&
-            sudo uv pip install pytest-github-actions-annotate-failures &&
             colcon build &&
             colcon test --event-handlers console_cohesion+ &&
             colcon test-result --all

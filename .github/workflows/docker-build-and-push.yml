@@ -4,8 +4,10 @@ on:
   workflow_dispatch:
     inputs:
       docker_image:
+        type: choice
         description: 'Docker Image'
         required: true
+        default: 'ros2'
         options:
           - ros2
           - moveit2
