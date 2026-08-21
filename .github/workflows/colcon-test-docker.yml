@@ -53,7 +53,7 @@ jobs:
             source install/setup.bash &&
             colcon test --event-handlers console_cohesion+ &&
             colcon test-result --all &&
-            mv /workspace/ros2_ws/log /workspace/ros2_ws/src/rviz_marker_publisher/log
+            mv /workspace/ros2_ws/log /workspace/ros2_ws/src/rviz_marker_publisher
           "
       # publish test report
       - name: Publish Test Report Dashboard
