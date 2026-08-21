@@ -37,7 +37,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Folder for Binding Results
-        run: mkdir -p $GITHUB_WORKSPACE/log
+        run: mkdir -m 777 -p $GITHUB_WORKSPACE/log
 
       - name: Pull Docker Image
         run: |
@@ -53,7 +53,7 @@ jobs:
             source install/setup.bash &&
             colcon test --event-handlers console_cohesion+ &&
             colcon test-result --all &&
-            cp -r /workspace/ros2_ws/log /workspace/ros2_ws/src/rviz_marker_publisher
+            sudo cp -r /workspace/ros2_ws/log /workspace/ros2_ws/src/rviz_marker_publisher
           "
       # publish test report
       - name: Publish Test Report Dashboard
