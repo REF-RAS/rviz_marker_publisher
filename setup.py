@@ -36,7 +36,6 @@ class UVInstallThenBuild(build_py):
             installer = [sys.executable, "-m", "pip", "install"]
             if Path('/.dockerenv').is_file():
                 if self.can_run_sudo():
-                    print(f'CAN DO SUDO')
                     installer.insert(0, 'sudo')
                 installer.append("--break-system-packages")
             installer = installer + dependencies

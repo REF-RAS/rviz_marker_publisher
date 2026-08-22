@@ -16,37 +16,43 @@ __version__ = "1.0"
 __email__ = "ak.lui@qut.edu.au"
 __status__ = "Development"
 
-import numbers
-import threading
+import sys, numbers, threading
 from collections import defaultdict
 from dataclasses import dataclass
 from enum import Enum
 from typing import Any, Union
-
 import numpy as np
-import rclpy
-import tf2_ros
-from geometry_msgs.msg import Point, Pose, PoseStamped, TransformStamped, Vector3
-from rclpy.callback_groups import CallbackGroup, ReentrantCallbackGroup
-from rclpy.duration import Duration
-from rclpy.node import Node, NodeNameNonExistentError
-from rclpy.publisher import Publisher
-from rclpy.qos import (
-    QoSDurabilityPolicy,
-    QoSHistoryPolicy,
-    QoSProfile,
-    QoSReliabilityPolicy,
-)
-from sensor_msgs.msg import PointCloud2, PointField
-from sensor_msgs_py import point_cloud2
-from std_msgs.msg import ColorRGBA, Header
-from visualization_msgs.msg import Marker, MarkerArray
+
+try:
+    import rclpy
+    import tf2_ros
+    from rclpy.callback_groups import CallbackGroup, ReentrantCallbackGroup
+    from rclpy.duration import Duration
+    from rclpy.node import Node, NodeNameNonExistentError
+    from rclpy.publisher import Publisher
+    from rclpy.qos import (
+        QoSDurabilityPolicy,
+        QoSHistoryPolicy,
+        QoSProfile,
+        QoSReliabilityPolicy,
+    )
+    from sensor_msgs.msg import PointCloud2, PointField
+    from sensor_msgs_py import point_cloud2
+    from geometry_msgs.msg import Point, Pose, PoseStamped, TransformStamped, Vector3
+    from std_msgs.msg import ColorRGBA, Header
+    from visualization_msgs.msg import Marker, MarkerArray
+except ModuleNotFoundError as e:
+    F_YELLOW, F_RED, F_RESET = "\x1b[33;20m", "\x1b[31;20m", "\x1b[0m"  
+    print(F_YELLOW + 'Execution Environment Error')  
+    print(f'rviz_marker_publisher requires a ROS2 environment installed with the following packages (refer to package.xml in the github repository)')
+    print(f'rclpy, tf2_ros, std_msgs, visualization_msgs, sensor_msgs, sensor_msgs_py, geometry_msgs, tf_transformations')
+    print(F_RESET)
+    sys.exit(1)
 
 from rviz_marker_publisher import pose_tools
 from rviz_marker_publisher.lock_tools import synchronized
 from rviz_marker_publisher.logging_tools import logger
 from rviz_marker_publisher.pose_tools import list_to_pose
-
 
 class RGBAColors(int, Enum):
     """Define common use colours for visualization.

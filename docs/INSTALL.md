@@ -113,12 +113,18 @@ The execution output should print out these tasks as listed above.
 
 ### Installation as a Python package
 
-The `rviz_marker_publisher` Python package may be installed independently. The package is hosted with this repository on Github and it can be pip installed (or other package installers).
+The `rviz_marker_publisher` Python package may be installed independently in a ROS2 environment. The package is hosted with this repository on Github and it can be pip installed (or other package installers).
 
 ```bash
-pip install https://github.com/REF-RAS/rviz_marker_publisher/dist/rviz_marker_publisher-0.1.0.tar.gz
+pip install git+https://github.com/REF-RAS/rviz_marker_publisher
 
 ```
+
+System requirements:
+- ROS2 environment installed with the packages specified in `package.xml`.
+- Python 3.10 or above in a virtual environment.
+- Pip (>=26.1)
+- (Optional) UV (>=0.9)
 
 ----
 ## Docker Containers for ROS2 and Moveit2 Environments
@@ -150,7 +156,7 @@ git clone git@github.com:REF-RAS/rviz_marker_publisher.git ${ROS2_WS}/src/rviz_m
 
 ```bash
 cd ${ROS2_WS}/docker
-docker compose up ros2 -d
+docker compose up ros2 -d --no-build
 ```
 When launching the service for the first time, docker will pull the image `ghcr.io/ref-ras/ros2` from the Github Container Registry (GHCR) that this repository has built. This may take a few minutes.
 
@@ -242,7 +248,7 @@ docker compose build ros
 Then bring up a new container of the image after the build is completed.
 
 ```bash
-docker compose up ros2 -d
+docker compose up ros2 -d --no-build
 ```
 
 ----

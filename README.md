@@ -62,10 +62,14 @@ def main():
 - Update the pose of markers and that of the associated transform.
 - Add and delete new topics and configure the QoS of the associated publishers.
 
+---
+
 ## Table of Contents
 
 - [Installation Guide](./docs/INSTALL.md)
-- [Tutorial](./docs/TUTORIAL.md)
+- [Programming Guide](./docs/TUTORIAL.md)
+
+---
 
 ### Attribution
 

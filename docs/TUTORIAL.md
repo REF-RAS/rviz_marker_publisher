@@ -24,25 +24,32 @@
 ----
 ## Introduction
 
-The aim of this tutorial is to guide users on the use of _RViz Marker Publisher_ package for implementing scene visualization of a ROS2 application. 
+The aim of this document is to guide users on the use of _RViz Marker Publisher_ package for implementing scene visualization of a ROS2 application. 
 The package supports three types of objects supported in the visualization framework of ROS2, including `Marker`, `MarkerArray`, and `PointCloud2`. 
 
 ----
 ## Prerequisites for Running the Example Programs
 
-This tutorial requires a ROS2 (`jazzy`) environment, a workspace at `${ROS2_WS}` and the `rviz_marker_publisher` package has been installed under `${ROS2_WS}/src/`.    
+The examples used in this programming guide require a ROS2 (`jazzy`) environment (refer to `package.xml`), a workspace at `${ROS2_WS}` and the `rviz_marker_publisher` package has been installed under `${ROS2_WS}/src/`.    
 
-Execute the following commands to build the workspace and to update the environment variables so that ROS2 can find the example programs provided by this repository.
+Execute the following commands to install ROS2 dependencies.
 
 ```bash
 source /opt/ros/jazzy/setup.bash
 
 cd ${ROS2_WS}
+rosdep update && rosdep install -y -r -i --rosdistro jazzy --from-paths .
+```
+
+Execute the following commands to build the workspace and to update the environment variables so that ROS2 can find the example programs provided by this repository.
+
+```bash
+cd ${ROS2_WS}
 colcon build --event-handlers console_direct+ 
 source instll/setup.bash
 ```
 > [!NOTE]
-> Do not know how to setup the ROS environment for running the example programs? Use the link below for the installation guide.
+> Do not know how to setup the ROS environment for running the example programs? Click below for the installation guide.
 >
 > [Installation Guide](./INSTALL.md).
 >
@@ -923,8 +930,27 @@ The following example shows how to instantiate a `RvizMarkerPublisher` with cust
 
 Run the example scripts `topic_set_default.py` for a demonstration.
 
+---
 
+## Configure the rviz_marker_publisher Package
 
+### Set Logging Level
+
+To change the logging level of the package, add the following at the start of a script.
+
+```python
+import logging
+import rviz_marker_publisher
+# set the rviz_marker_publisher logging level 
+rviz_marker_publisher.get_logger().setLevel(logging.WARNING)
+```
+
+The following example will suppress all logging messages from the package.
+
+```python
+# supress the rviz_marker_publisher logging
+rviz_marker_publisher.get_logger().setLevel(logging.CRITICAL)
+```
 
 ----
 ### Author

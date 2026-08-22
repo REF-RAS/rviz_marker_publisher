@@ -19,7 +19,7 @@ import pandas as pd
 
 LOGLEVEL_VARNAME = "GLOBAL_LOGLEVEL"
 LOGFILE_VARNAME = "GLOBAL_LOGFILE"
-
+DEFAULT_LOGGER_NAME = 'rviz_marker_publisher'
 
 # -- The custom logger for the task trees package
 class CustomFormatter(logging.Formatter):
@@ -65,14 +65,13 @@ class CustomFormatter(logging.Formatter):
         result = super().formatException(exc_info)
         return repr(result)
 
-
-# internal function that intializes the logger
+# create a new logger or return an existing logger given the name
 def get_logger(
-    name="global", level: int = logging.INFO, silent: bool = False, logging_file: str | None = None, logging_file_level: int | None = None
+    name=DEFAULT_LOGGER_NAME, level: int = logging.INFO, silent: bool = False, logging_file: str | None = None, logging_file_level: int | None = None
 ) -> logging.Logger:
     """Create or get an existing logger givne the name and optionally the level, slient mode, and whether the log is written to a file.
 
-    :param name: the name of the logger, defaults to 'global'
+    :param name: the name of the logger, defaults to DEFAULT_LOGGER_NAME
     :type name: str, optional
     :param level: the logging level, defaults to logging.INFO
     :type level: int, optional
