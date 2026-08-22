@@ -116,7 +116,7 @@ The execution output should print out these tasks as listed above.
 The `rviz_marker_publisher` Python package may be installed independently in a ROS2 environment. The package is hosted with this repository on Github and it can be pip installed (or other package installers).
 
 ```bash
-pip install https://github.com/REF-RAS/rviz_marker_publisher
+pip install git+https://github.com/REF-RAS/rviz_marker_publisher
 
 ```
 
