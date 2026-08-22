@@ -32,8 +32,7 @@ services:
             - /tmp/.X11-unix:/tmp/.X11-unix:rw
             - /etc/timezone:/etc/timezone:ro
             - /etc/localtime:/etc/localtime:ro 
-            - ~/ros2_ws/src/rviz_marker_publisher:/workspace/ros2_ws/src/rviz_marker_publisher:rw  
-            # - ~/ros2_ws/src/pymoveit2:/app/ros2_ws/src/pymoveit2:rw                    
+            - ~/ros2_ws/src/rviz_marker_publisher:/workspace/ros2_ws/src/rviz_marker_publisher:rw                     
         command: bash
     
     ros2-test:
@@ -75,16 +74,9 @@ services:
             - /tmp/.X11-unix:/tmp/.X11-unix:rw
             - /etc/timezone:/etc/timezone:ro
             - /etc/localtime:/etc/localtime:ro 
-            - ~/ros2_ws/src/rviz_marker_publisher:/workspace/ros2_ws/src/rviz_marker_publisher:rw  
-            # - ~/ros2_ws/src/pymoveit2:/app/ros2_ws/src/pymoveit2:rw                    
+            - ~/ros2_ws/src/rviz_marker_publisher:/workspace/ros2_ws/src/rviz_marker_publisher:rw                   
         command: bash
-        # deploy:
-        #     resources:
-        #         reservations:
-        #             devices:
-        #                 - driver: nvidia
-        #                   count: 1
-        #                   capabilities: [gpu]
+
 
 
 

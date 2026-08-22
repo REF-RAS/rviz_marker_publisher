@@ -11,7 +11,7 @@ __version__ = '1.0'
 __email__ = 'ak.lui@qut.edu.au'
 __status__ = 'Development'
 
-import os, sys, random, time, traceback
+import os, sys, random, time, traceback, logging
 import cv2
 import rclpy
 from rclpy.node import Node
@@ -23,6 +23,8 @@ from ament_index_python import get_packages_with_prefixes, get_package_share_dir
 import rviz_marker_publisher
 from rviz_marker_publisher import RvizMarkerPublisher, get_logger
 logger = get_logger()
+# set the rviz_marker_publisher logging level 
+rviz_marker_publisher.get_logger().setLevel(logging.DEBUG)
 
 def main():
     """ Demonstrate many functionalities of the RvizMarkerPublisher package
